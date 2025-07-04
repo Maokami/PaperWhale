@@ -45,18 +45,32 @@ class PaperKeyword(Base):
     paper_id = Column(Integer, ForeignKey("papers.id"), primary_key=True)
     keyword_id = Column(Integer, ForeignKey("keywords.id"), primary_key=True)
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slack_user_id = Column(String, unique=True, index=True, nullable=False)
+    api_key = Column(String, nullable=True)  # For AI services
+
+    keywords = relationship("UserKeyword", back_populates="user")
+    authors = relationship("UserAuthor", back_populates="user")
+
+
 class UserKeyword(Base):
     __tablename__ = "user_keywords"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False) # Slack user ID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     keyword_id = Column(Integer, ForeignKey("keywords.id"), nullable=False)
 
+    user = relationship("User", back_populates="keywords")
     keyword = relationship("Keyword")
+
 
 class UserAuthor(Base):
     __tablename__ = "user_authors"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False) # Slack user ID
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("authors.id"), nullable=False)
 
+    user = relationship("User", back_populates="authors")
     author = relationship("Author")

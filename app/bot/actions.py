@@ -2,10 +2,35 @@ from slack_bolt.async_app import AsyncApp
 from app.db.database import get_db
 from app.services.paper_service import PaperService
 from app.services.user_subscription_service import UserSubscriptionService
+from app.services.user_service import UserService
 from app.db.schemas import PaperCreate
 from datetime import datetime
 
 def register_actions(app: AsyncApp):
+    @app.view("register_api_key_modal")
+    async def handle_register_api_key_modal_submission(ack, body, client, logger):
+        await ack()
+        user_id = body["user"]["id"]
+        state_values = body["view"]["state"]["values"]
+
+        api_key = state_values["api_key_block"]["api_key_input"]["value"]
+
+        try:
+            db = next(get_db())
+            user_service = UserService(db)
+            user_service.update_api_key(user_id, api_key)
+
+            await client.chat_postMessage(
+                channel=user_id,
+                text="API Key가 성공적으로 등록되었습니다!"
+            )
+        except Exception as e:
+            logger.error(f"Failed to register API key: {e}")
+            await client.chat_postMessage(
+                channel=user_id,
+                text="API Key 등록에 실패했습니다. 다시 시도해주세요."
+            )
+
     @app.view("add_paper_modal")
     async def handle_add_paper_modal_submission(ack, body, client, logger):
         await ack()
