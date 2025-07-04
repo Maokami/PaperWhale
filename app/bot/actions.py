@@ -7,6 +7,43 @@ from app.db.schemas import PaperCreate
 from datetime import datetime
 
 def register_actions(app: AsyncApp):
+    @app.view("summarize_paper_modal")
+    async def handle_summarize_paper_modal_submission(ack, body, client, logger):
+        await ack()
+        user_id = body["user"]["id"]
+        state_values = body["view"]["state"]["values"]
+
+        paper_id_str = state_values["paper_id_block"]["paper_id_input"]["value"]
+
+        try:
+            paper_id = int(paper_id_str)
+            db = next(get_db())
+            paper_service = PaperService(db)
+            summary = await paper_service.summarize_paper(paper_id, user_id)
+
+            if summary:
+                await client.chat_postMessage(
+                    channel=user_id,
+                    text=f"*논문 ID {paper_id} 요약:*\n\n{summary}"
+                )
+            else:
+                await client.chat_postMessage(
+                    channel=user_id,
+                    text=f"논문 ID {paper_id}를 찾을 수 없습니다."
+                )
+        except ValueError as e:
+            logger.error(f"Value error: {e}")
+            await client.chat_postMessage(
+                channel=user_id,
+                text=str(e)
+            )
+        except Exception as e:
+            logger.error(f"Failed to summarize paper: {e}")
+            await client.chat_postMessage(
+                channel=user_id,
+                text="논문 요약에 실패했습니다. 다시 시도해주세요."
+            )
+
     @app.view("register_api_key_modal")
     async def handle_register_api_key_modal_submission(ack, body, client, logger):
         await ack()

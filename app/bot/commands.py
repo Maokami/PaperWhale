@@ -2,6 +2,31 @@ from slack_bolt.async_app import AsyncApp
 
 
 def register_commands(app: AsyncApp):
+    @app.command("/논문-요약")
+    async def summarize_paper_command(ack, body, client):
+        await ack()
+        await client.views_open(
+            trigger_id=body["trigger_id"],
+            view={
+                "type": "modal",
+                "callback_id": "summarize_paper_modal",
+                "title": {"type": "plain_text", "text": "논문 요약"},
+                "submit": {"type": "plain_text", "text": "요약"},
+                "blocks": [
+                    {
+                        "type": "input",
+                        "block_id": "paper_id_block",
+                        "label": {"type": "plain_text", "text": "논문 ID"},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_id_input",
+                            "placeholder": {"type": "plain_text", "text": "요약할 논문의 ID를 입력하세요"},
+                        },
+                    }
+                ],
+            },
+        )
+
     @app.command("/api-key-등록")
     async def register_api_key_command(ack, body, client):
         await ack()

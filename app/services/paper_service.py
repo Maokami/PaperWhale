@@ -1,6 +1,9 @@
+import arxiv
 from sqlalchemy.orm import Session
 from app.db.models import Paper, Author, Keyword, PaperAuthor, PaperKeyword
 from app.db.schemas import PaperCreate, PaperUpdate
+from app.services.ai_service import AIService
+from app.services.user_service import UserService
 from typing import List, Optional
 from sqlalchemy import or_
 from datetime import datetime, UTC
@@ -8,6 +11,35 @@ from datetime import datetime, UTC
 class PaperService:
     def __init__(self, db: Session):
         self.db = db
+        self.user_service = UserService(db)
+
+    async def summarize_paper(self, paper_id: int, slack_user_id: str) -> Optional[str]:
+        paper = self.get_paper(paper_id)
+        if not paper:
+            return None
+
+        if paper.summary and len(paper.summary) > 10: # Don't re-summarize if already summarized
+            return paper.summary
+
+        user = self.user_service.get_or_create_user(slack_user_id)
+        if not user.api_key:
+            raise ValueError("User API key is not set.")
+
+        if not paper.arxiv_id:
+            raise ValueError("Paper does not have an arXiv ID.")
+
+        try:
+            search = arxiv.Search(id_list=[paper.arxiv_id])
+            paper_result = next(search.results())
+            text_to_summarize = paper_result.summary
+        except StopIteration:
+            raise ValueError(f"Could not find paper with arXiv ID: {paper.arxiv_id}")
+
+        ai_service = AIService(user.api_key)
+        summary = await ai_service.summarize_text(text_to_summarize)
+        paper.summary = summary
+        self.db.commit()
+        return summary
 
     def get_paper(self, paper_id: int) -> Optional[Paper]:
         return self.db.query(Paper).filter(Paper.id == paper_id).first()

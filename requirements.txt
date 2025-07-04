@@ -8,3 +8,5 @@ pydantic-settings
 asyncpg # For PostgreSQL async support
 arxiv # For fetching papers from arXiv
 aiohttp # For AsyncSocketModeHandler
+openai
+tenacity
