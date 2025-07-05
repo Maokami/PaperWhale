@@ -1,17 +1,20 @@
 import logging
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
 
 # Resolve the absolute path for SQLite database
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite:///") and not SQLALCHEMY_DATABASE_URL.startswith("sqlite:////"):
+if SQLALCHEMY_DATABASE_URL.startswith(
+    "sqlite:///"
+) and not SQLALCHEMY_DATABASE_URL.startswith("sqlite:////"):
     db_path = SQLALCHEMY_DATABASE_URL.replace("sqlite:///./", "")
     absolute_db_path = os.path.abspath(db_path)
     logger.debug(f"Resolved SQLite DB path: {absolute_db_path}")
@@ -26,6 +29,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -33,8 +37,10 @@ def get_db():
     finally:
         db.close()
 
+
 def init_db():
-    import app.db.models # Import models to ensure they are registered with Base.metadata
+    import app.db.models  # Import models to ensure they are registered with Base.metadata
+
     logger.debug("Attempting to create all tables...")
     Base.metadata.create_all(bind=engine)
     logger.debug("Table creation attempt finished.")
