@@ -1,6 +1,9 @@
 import arxiv
 from typing import List, Dict
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ScholarService:
     def __init__(self):
@@ -12,10 +15,6 @@ class ScholarService:
         Returns a list of dictionaries, each representing a paper.
         """
         search_query = f'ti:"{keyword}" OR abs:"{keyword}"'
-        # Search for papers published in the last 7 days
-        # This is a placeholder; a more robust solution would track the last search time.
-        # seven_days_ago = datetime.now() - timedelta(days=7)
-        # query = f'{search_query} AND submittedDate:[{seven_days_ago.strftime("%Y%m%d%H%M%S")} TO {datetime.now().strftime("%Y%m%d%H%M%S")}]'
 
         search = arxiv.Search(
             query=search_query,
@@ -25,13 +24,18 @@ class ScholarService:
         )
 
         papers_data = []
-        for result in self.client.results(search):
-            papers_data.append({
-                "title": result.title,
-                "url": result.pdf_url,
-                "summary": result.summary,
-                "authors": [author.name for author in result.authors],
-                "published_date": result.published,
-                "arxiv_id": result.entry_id.split('/')[-1]
-            })
+        try:
+            for result in self.client.results(search):
+                papers_data.append({
+                    "title": result.title,
+                    "url": result.pdf_url,
+                    "summary": result.summary,
+                    "authors": [author.name for author in result.authors],
+                    "published_date": result.published,
+                    "arxiv_id": result.entry_id.split('/')[-1]
+                })
+        except Exception as e:
+            logger.error(f"Error searching arXiv for keyword '{keyword}': {e}")
+            # Depending on the desired fault tolerance, you might want to re-raise,
+            # return an empty list, or implement a retry mechanism here.
         return papers_data
