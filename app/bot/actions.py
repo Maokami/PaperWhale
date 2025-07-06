@@ -154,6 +154,19 @@ async def _process_add_paper_submission(
             return
 
     try:
+        # Check for existing paper before creating
+        existing_paper = paper_service.get_paper_by_url_or_arxiv_id(
+            url=final_url, arxiv_id=final_arxiv_id
+        )
+        if existing_paper is not None:
+            await ack(
+                response_action="errors",
+                errors={
+                    "paper_url_block": f"이미 존재하는 논문입니다: {existing_paper.title}"
+                },
+            )
+            return
+
         paper_create_data = {
             "title": final_title,
             "url": final_url,

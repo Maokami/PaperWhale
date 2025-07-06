@@ -21,3 +21,5 @@ spec:
         envFrom:
         - secretRef:
             name: db-secret
+        - secretRef:
+            name: slack-secrets

@@ -50,6 +50,16 @@ class PaperService:
     def get_papers(self, skip: int = 0, limit: int = 100) -> List[Paper]:
         return self.db.query(Paper).offset(skip).limit(limit).all()
 
+    def get_paper_by_url_or_arxiv_id(self, url: Optional[str] = None, arxiv_id: Optional[str] = None) -> Optional[Paper]:
+        if not url and not arxiv_id:
+            return None
+        query = self.db.query(Paper)
+        if url:
+            query = query.filter(Paper.url == url)
+        if arxiv_id:
+            query = query.filter(or_(query.expression.clauses, Paper.arxiv_id == arxiv_id))
+        return query.first()
+
     def create_paper(self, paper: PaperCreate) -> Paper:
         db_paper = Paper(
             title=paper.title,

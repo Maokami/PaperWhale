@@ -29,7 +29,9 @@ def db_session():
 
 @pytest.fixture(scope="function")
 def paper_service(db_session):
-    return PaperService(db_session)
+    svc = PaperService(db_session)
+    svc.get_paper_by_url_or_arxiv_id = MagicMock(return_value=None)
+    return svc
 
 
 @pytest.fixture(scope="function")
@@ -639,3 +641,64 @@ async def test_add_paper_with_bibtex_invalid_year(
         created_paper_data.published_date is not None
     )  # Should default to current datetime if year parsing fails
     assert created_paper_data.bibtex == bibtex_str
+
+
+@pytest.mark.asyncio
+@patch("app.db.database.get_db")
+async def test_add_paper_with_existing_url(
+    mock_get_db, db_session, paper_service, user_service, mock_slack_context
+):
+    ack, client, logger = mock_slack_context
+    mock_get_db.return_value = iter([db_session])
+
+    # Mock an existing paper
+    existing_paper = Paper(
+        id=99, title="Existing Paper", url="http://existing.com", arxiv_id="9999.99999"
+    )
+    paper_service.get_paper_by_url_or_arxiv_id = MagicMock(return_value=existing_paper)
+    # Ensure create_paper is not called
+    paper_service.create_paper = MagicMock()
+
+    user_service.get_or_create_user = MagicMock(
+        return_value=User(id=1, slack_user_id="U123")
+    )
+
+    body = {
+        "user": {"id": "U123"},
+        "view": {
+            "state": {
+                "values": {
+                    "paper_title_block": {"paper_title_input": {"value": "New Paper"}},
+                    "paper_url_block": {
+                        "paper_url_input": {"value": "http://existing.com"}
+                    },
+                    "paper_authors_block": {"paper_authors_input": {"value": ""}},
+                    "paper_keywords_block": {"paper_keywords_input": {"value": ""}},
+                    "paper_summary_block": {"paper_summary_input": {"value": ""}},
+                    "paper_published_date_block": {
+                        "paper_published_date_input": {"value": ""}
+                    },
+                    "paper_arxiv_id_block": {"paper_arxiv_id_input": {"value": ""}},
+                    "paper_bibtex_block": {"paper_bibtex_input": {"value": ""}},
+                }
+            }
+        },
+    }
+
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
+        await _process_add_paper_submission(
+            ack, body, client, logger, db_session, paper_service, user_service
+        )
+
+    ack.assert_called_once_with(
+        response_action="errors",
+        errors={"paper_url_block": f"이미 존재하는 논문입니다: {existing_paper.title}"},
+    )
+    paper_service.get_paper_by_url_or_arxiv_id.assert_called_once_with(
+        url="http://existing.com", arxiv_id=None
+    )
+    paper_service.create_paper.assert_not_called()
+    client.chat_postMessage.assert_not_called()
