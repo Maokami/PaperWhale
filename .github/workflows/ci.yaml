@@ -38,7 +38,7 @@ jobs:
       continue-on-error: true
 
     - name: Test
-      run: pytest
+      run: python -m pytest
 
   build_and_push:
     needs: test_and_lint
