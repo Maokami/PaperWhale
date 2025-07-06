@@ -12,3 +12,4 @@ aiohttp # For AsyncSocketModeHandler
 openai
 tenacity
 bibtexparser
+mypy
