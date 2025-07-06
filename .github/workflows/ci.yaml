@@ -7,6 +7,10 @@ on:
 jobs:
   test_and_lint:
     runs-on: self-hosted
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+      SLACK_APP_TOKEN: ${{ secrets.SLACK_APP_TOKEN }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
