@@ -200,7 +200,7 @@ async def _process_add_paper_submission(
                 errors["paper_bibtex_block"] = error["msg"]
             else:
                 # Generic error for other fields
-                errors["paper_title_block"] = f"입력 오류: {error["msg"]}"
+                errors["paper_title_block"] = f"입력 오류: {error['msg']}"
         await ack(
             response_action="errors",
             errors=errors,

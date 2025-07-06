@@ -97,9 +97,10 @@ async def test_add_paper_with_bibtex_only(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -165,9 +166,10 @@ async def test_add_paper_with_manual_input_only(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -239,9 +241,10 @@ async def test_add_paper_with_bibtex_and_manual_override(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -301,9 +304,10 @@ This is not a valid bibtex entry.
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -351,9 +355,10 @@ async def test_add_paper_with_missing_required_fields(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -413,9 +418,10 @@ async def test_add_paper_with_bibtex_minimal_fields(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -479,9 +485,10 @@ async def test_add_paper_with_bibtex_no_url_or_arxiv_id(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -544,9 +551,10 @@ async def test_add_paper_with_bibtex_only_eprint(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
@@ -609,9 +617,10 @@ async def test_add_paper_with_bibtex_invalid_year(
         },
     }
 
-    with patch(
-        "app.services.paper_service.PaperService", return_value=paper_service
-    ), patch("app.services.user_service.UserService", return_value=user_service):
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
         await _process_add_paper_submission(
             ack, body, client, logger, db_session, paper_service, user_service
         )
