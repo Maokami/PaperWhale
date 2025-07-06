@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.db import models, schemas
+from app.db import models
 
 
 class UserService:

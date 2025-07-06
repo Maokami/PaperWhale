@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from app.db.models import UserKeyword, UserAuthor, Keyword, Author
-from app.db.schemas import UserKeywordCreate, UserAuthorCreate
 from app.services.user_service import UserService
 from typing import List, Optional
 

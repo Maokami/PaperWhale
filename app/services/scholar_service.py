@@ -1,6 +1,5 @@
 import arxiv
 from typing import List, Dict
-from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)

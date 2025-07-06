@@ -1,6 +1,5 @@
 import logging
 from app.db.database import init_db, SQLALCHEMY_DATABASE_URL
-import os
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(

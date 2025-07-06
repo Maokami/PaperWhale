@@ -5,9 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db.models import Base, User, Paper
 from app.services.paper_service import PaperService
 from app.services.user_service import UserService
-from app.db.schemas import PaperCreate
 from app.bot.actions import _process_add_paper_submission
-from datetime import datetime
 
 # Setup a test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"

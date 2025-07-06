@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.db.models import Base, User, Paper
+from app.db.models import Base, Paper
 from app.services.paper_service import PaperService
 from app.services.user_service import UserService
 from app.db.schemas import PaperCreate, PaperUpdate
@@ -52,7 +52,7 @@ async def test_summarize_paper(
     generated_summary = "This is the AI generated summary."
 
     # Mock user and paper
-    user = user_service.update_api_key(slack_user_id, api_key)
+    user_service.update_api_key(slack_user_id, api_key)
     paper = paper_service.create_paper(
         PaperCreate(
             title="Test Paper for Summarization",

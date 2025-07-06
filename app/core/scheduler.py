@@ -5,11 +5,10 @@ from app.db.database import SQLALCHEMY_DATABASE_URL, SessionLocal
 from app.services.scholar_service import ScholarService
 from app.services.slack_service import SlackService
 from app.services.paper_service import PaperService
-from app.db.models import UserKeyword, Keyword, Paper
+from app.db.models import UserKeyword, Paper
 from app.db.schemas import PaperCreate
 from sqlalchemy.orm import joinedload
 from collections import defaultdict
-import asyncio
 
 jobstores = {"default": SQLAlchemyJobStore(url=SQLALCHEMY_DATABASE_URL)}
 executors = {"default": ThreadPoolExecutor(20), "processpool": ProcessPoolExecutor(5)}

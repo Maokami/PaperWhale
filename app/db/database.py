@@ -43,8 +43,6 @@ def get_db():
 
 
 def init_db():
-    import app.db.models  # Import models to ensure they are registered with Base.metadata
-
     logger.debug("Attempting to create all tables...")
     Base.metadata.create_all(bind=engine)
     logger.debug("Table creation attempt finished.")
