@@ -81,6 +81,7 @@ async def _process_add_paper_submission(
                     "eprint"
                 )  # Often found in eprint field for arXiv
                 parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get("note") # Use 'abstract' or 'note' for summary
+                parsed_bibtex_data["keywords"] = [k.strip() for k in entry.get("keywords", "").split(",") if k.strip()] # Parse keywords from BibTeX
             else:
                 # If the parser returns no entries, emulate the error format
                 # expected by the test suite so that an informative message
@@ -124,7 +125,9 @@ async def _process_add_paper_submission(
         final_authors = [a.strip() for a in final_authors.split(",") if a.strip()]
 
     # Normalise keyword string to list
-    keyword_names = [k.strip() for k in (keywords_str or "").split(",") if k.strip()]
+    final_keyword_names = [k.strip() for k in (keywords_str or "").split(",") if k.strip()]
+    if not final_keyword_names and parsed_bibtex_data.get("keywords"):
+        final_keyword_names = parsed_bibtex_data["keywords"]
 
     # Ensure authors and keywords are always lists
     if final_authors is None:
@@ -175,7 +178,7 @@ async def _process_add_paper_submission(
             "published_date": parsed_published_date,
             "arxiv_id": final_arxiv_id,
             **({"author_names": final_authors} if final_authors else {}),
-            **({"keyword_names": keyword_names} if keyword_names else {}),
+            **({"keyword_names": final_keyword_names} if final_keyword_names else {}),
             "bibtex": bibtex_str,  # Store original bibtex if provided
         }
 
