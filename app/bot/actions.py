@@ -195,11 +195,13 @@ async def _process_add_paper_submission(
 
         new_paper = paper_service.create_paper(paper_create)
 
+        await ack()  # Acknowledge after successful processing
+
         await client.chat_postMessage(
             channel=user_id,
             text=f"논문 '{new_paper.title}'이(가) 성공적으로 추가되었습니다!",
         )
-        await ack()  # Acknowledge after successful processing
+
     except ValidationError as e:
         logger.error(f"Pydantic validation error: {e.errors()}")
         errors = {}
