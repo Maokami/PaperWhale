@@ -8,6 +8,7 @@ from typing import List, Optional
 from sqlalchemy import or_
 from datetime import datetime, UTC
 
+
 class PaperService:
     def __init__(self, db: Session):
         self.db = db
@@ -18,7 +19,9 @@ class PaperService:
         if not paper:
             return None
 
-        if paper.summary and len(paper.summary) > 10: # Don't re-summarize if already summarized
+        if (
+            paper.summary and len(paper.summary) > 10
+        ):  # Don't re-summarize if already summarized
             return paper.summary
 
         user = self.user_service.get_or_create_user(slack_user_id)
@@ -50,13 +53,15 @@ class PaperService:
     def create_paper(self, paper: PaperCreate) -> Paper:
         db_paper = Paper(
             title=paper.title,
-            url=str(paper.url), # Convert HttpUrl to string
+            url=str(paper.url),  # Convert HttpUrl to string
             summary=paper.summary,
-            published_date=paper.published_date if paper.published_date else datetime.now(UTC),
-            arxiv_id=paper.arxiv_id
+            published_date=paper.published_date
+            if paper.published_date
+            else datetime.now(UTC),
+            arxiv_id=paper.arxiv_id,
         )
         self.db.add(db_paper)
-        self.db.flush() # Flush to get the paper ID before adding relationships
+        self.db.flush()  # Flush to get the paper ID before adding relationships
 
         self._add_authors_to_paper(db_paper, paper.author_names)
         self._add_keywords_to_paper(db_paper, paper.keyword_names)
@@ -73,14 +78,18 @@ class PaperService:
         for var, value in paper.model_dump(exclude_unset=True).items():
             if var == "author_names":
                 # Clear existing authors and add new ones
-                self.db.query(PaperAuthor).filter(PaperAuthor.paper_id == paper_id).delete()
+                self.db.query(PaperAuthor).filter(
+                    PaperAuthor.paper_id == paper_id
+                ).delete()
                 self._add_authors_to_paper(db_paper, value)
             elif var == "keyword_names":
                 # Clear existing keywords and add new ones
-                self.db.query(PaperKeyword).filter(PaperKeyword.paper_id == paper_id).delete()
+                self.db.query(PaperKeyword).filter(
+                    PaperKeyword.paper_id == paper_id
+                ).delete()
                 self._add_keywords_to_paper(db_paper, value)
             elif var == "url":
-                setattr(db_paper, var, str(value)) # Convert HttpUrl to string
+                setattr(db_paper, var, str(value))  # Convert HttpUrl to string
             else:
                 setattr(db_paper, var, value)
 
@@ -98,14 +107,21 @@ class PaperService:
 
     def search_papers(self, query: str) -> List[Paper]:
         search_query = f"%{query.lower()}%"
-        return self.db.query(Paper).join(Paper.authors, isouter=True).join(Paper.keywords, isouter=True).filter(
-            or_(
-                Paper.title.ilike(search_query),
-                Paper.summary.ilike(search_query),
-                Author.name.ilike(search_query),
-                Keyword.name.ilike(search_query)
+        return (
+            self.db.query(Paper)
+            .join(Paper.authors, isouter=True)
+            .join(Paper.keywords, isouter=True)
+            .filter(
+                or_(
+                    Paper.title.ilike(search_query),
+                    Paper.summary.ilike(search_query),
+                    Author.name.ilike(search_query),
+                    Keyword.name.ilike(search_query),
+                )
             )
-        ).distinct().all()
+            .distinct()
+            .all()
+        )
 
     def _get_or_create_author(self, author_name: str) -> Author:
         author = self.db.query(Author).filter(Author.name == author_name).first()

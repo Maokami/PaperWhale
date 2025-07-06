@@ -11,29 +11,28 @@ from sqlalchemy.orm import joinedload
 from collections import defaultdict
 import asyncio
 
-jobstores = {
-    'default': SQLAlchemyJobStore(url=SQLALCHEMY_DATABASE_URL)
-}
-executors = {
-    'default': ThreadPoolExecutor(20),
-    'processpool': ProcessPoolExecutor(5)
-}
-job_defaults = {
-    'coalesce': False,
-    'max_instances': 3
-}
+jobstores = {"default": SQLAlchemyJobStore(url=SQLALCHEMY_DATABASE_URL)}
+executors = {"default": ThreadPoolExecutor(20), "processpool": ProcessPoolExecutor(5)}
+job_defaults = {"coalesce": False, "max_instances": 3}
 
-scheduler = AsyncIOScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults)
+scheduler = AsyncIOScheduler(
+    jobstores=jobstores, executors=executors, job_defaults=job_defaults
+)
+
 
 async def check_for_new_papers_async():
     db = SessionLocal()
     slack_service = SlackService()
     try:
         scholar_service = ScholarService()
-        
+
         # Optimize query to fetch keywords and users together
-        user_keywords = db.query(UserKeyword).options(joinedload(UserKeyword.keyword), joinedload(UserKeyword.user)).all()
-        
+        user_keywords = (
+            db.query(UserKeyword)
+            .options(joinedload(UserKeyword.keyword), joinedload(UserKeyword.user))
+            .all()
+        )
+
         keyword_to_users = defaultdict(list)
         for uk in user_keywords:
             if uk.keyword and uk.user:
@@ -44,9 +43,14 @@ async def check_for_new_papers_async():
             new_papers_data = scholar_service.search_new_papers(keyword_name)
             for paper_data in new_papers_data:
                 # Check for duplicates before saving
-                existing_paper = db.query(Paper).filter(
-                    (Paper.arxiv_id == paper_data.get("arxiv_id")) | (Paper.url == paper_data.get("url"))
-                ).first()
+                existing_paper = (
+                    db.query(Paper)
+                    .filter(
+                        (Paper.arxiv_id == paper_data.get("arxiv_id"))
+                        | (Paper.url == paper_data.get("url"))
+                    )
+                    .first()
+                )
 
                 if not existing_paper:
                     paper_create = PaperCreate(
@@ -56,7 +60,7 @@ async def check_for_new_papers_async():
                         published_date=paper_data.get("published_date"),
                         arxiv_id=paper_data.get("arxiv_id"),
                         author_names=paper_data.get("authors", []),
-                        keyword_names=[keyword_name]
+                        keyword_names=[keyword_name],
                     )
                     paper_service = PaperService(db)
                     new_paper = paper_service.create_paper(paper_create)
@@ -66,18 +70,30 @@ async def check_for_new_papers_async():
                             user_id=user_id,
                             paper_title=new_paper.title,
                             paper_url=new_paper.url,
-                            summary=new_paper.summary or 'N/A',
-                            authors=", ".join([author.name for author in new_paper.authors]),
-                            keywords=", ".join([keyword.name for keyword in new_paper.keywords])
+                            summary=new_paper.summary or "N/A",
+                            authors=", ".join(
+                                [author.name for author in new_paper.authors]
+                            ),
+                            keywords=", ".join(
+                                [keyword.name for keyword in new_paper.keywords]
+                            ),
                         )
                 else:
                     print(f"Paper already exists: {existing_paper.title}")
     finally:
         db.close()
 
+
 async def start_scheduler():
     scheduler.start()
-    scheduler.add_job(check_for_new_papers_async, 'interval', minutes=60, id='new_paper_check', replace_existing=True)
+    scheduler.add_job(
+        check_for_new_papers_async,
+        "interval",
+        minutes=60,
+        id="new_paper_check",
+        replace_existing=True,
+    )
+
 
 async def shutdown_scheduler():
     scheduler.shutdown()

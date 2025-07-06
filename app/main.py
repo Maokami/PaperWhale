@@ -9,6 +9,7 @@ app = api_app
 # Create a SlackRequestHandler
 slack_handler = SlackRequestHandler(slack_app)
 
+
 # Slack Bolt endpoint
 @app.post("/slack/events")
 async def slack_events(req: Request):

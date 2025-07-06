@@ -16,6 +16,7 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 @pytest.fixture(scope="function")
 def db_session():
     Base.metadata.create_all(bind=engine)
@@ -26,18 +27,23 @@ def db_session():
         db.close()
         Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture(scope="function")
 def paper_service(db_session):
     return PaperService(db_session)
+
 
 @pytest.fixture(scope="function")
 def user_service(db_session):
     return UserService(db_session)
 
+
 @pytest.mark.asyncio
-@patch('app.services.paper_service.arxiv.Search')
-@patch('app.services.paper_service.AIService')
-async def test_summarize_paper(mock_ai_service, mock_arxiv_search, paper_service, user_service, db_session):
+@patch("app.services.paper_service.arxiv.Search")
+@patch("app.services.paper_service.AIService")
+async def test_summarize_paper(
+    mock_ai_service, mock_arxiv_search, paper_service, user_service, db_session
+):
     # 1. Setup
     slack_user_id = "U12345"
     api_key = "fake_api_key"
@@ -47,11 +53,13 @@ async def test_summarize_paper(mock_ai_service, mock_arxiv_search, paper_service
 
     # Mock user and paper
     user = user_service.update_api_key(slack_user_id, api_key)
-    paper = paper_service.create_paper(PaperCreate(
-        title="Test Paper for Summarization",
-        url="http://example.com/summary_paper",
-        arxiv_id=arxiv_id
-    ))
+    paper = paper_service.create_paper(
+        PaperCreate(
+            title="Test Paper for Summarization",
+            url="http://example.com/summary_paper",
+            arxiv_id=arxiv_id,
+        )
+    )
 
     # Mock arxiv search
     mock_arxiv_result = MagicMock()
@@ -75,6 +83,7 @@ async def test_summarize_paper(mock_ai_service, mock_arxiv_search, paper_service
     updated_paper = db_session.query(Paper).filter(Paper.id == paper.id).first()
     assert updated_paper.summary == generated_summary
 
+
 def test_create_paper(paper_service):
     paper_data = PaperCreate(
         title="Test Paper 1",
@@ -83,7 +92,7 @@ def test_create_paper(paper_service):
         published_date=datetime(2023, 1, 1),
         arxiv_id="2301.00001",
         author_names=["John Doe", "Jane Smith"],
-        keyword_names=["PL", "Testing"]
+        keyword_names=["PL", "Testing"],
     )
     paper = paper_service.create_paper(paper_data)
 
@@ -95,6 +104,7 @@ def test_create_paper(paper_service):
     assert len(paper.keywords) == 2
     assert paper.keywords[0].name == "PL"
 
+
 def test_get_paper(paper_service):
     paper_data = PaperCreate(
         title="Test Paper 2",
@@ -103,7 +113,7 @@ def test_get_paper(paper_service):
         published_date=datetime(2023, 2, 1),
         arxiv_id="2302.00002",
         author_names=["Alice"],
-        keyword_names=["AI"]
+        keyword_names=["AI"],
     )
     created_paper = paper_service.create_paper(paper_data)
 
@@ -111,18 +121,20 @@ def test_get_paper(paper_service):
     assert fetched_paper is not None
     assert fetched_paper.title == "Test Paper 2"
 
+
 def test_get_papers(paper_service):
     paper_service.create_paper(PaperCreate(title="Paper A", url="http://a.com"))
     paper_service.create_paper(PaperCreate(title="Paper B", url="http://b.com"))
     papers = paper_service.get_papers()
     assert len(papers) == 2
 
+
 def test_update_paper(paper_service):
     paper_data = PaperCreate(
         title="Original Title",
         url="http://original.com",
         author_names=["Author1"],
-        keyword_names=["Keyword1"]
+        keyword_names=["Keyword1"],
     )
     created_paper = paper_service.create_paper(paper_data)
 
@@ -130,7 +142,7 @@ def test_update_paper(paper_service):
         title="Updated Title",
         summary="New summary.",
         author_names=["Author2", "Author3"],
-        keyword_names=["Keyword2"]
+        keyword_names=["Keyword2"],
     )
     updated_paper = paper_service.update_paper(created_paper.id, update_data)
 
@@ -141,21 +153,41 @@ def test_update_paper(paper_service):
     assert len(updated_paper.keywords) == 1
     assert updated_paper.keywords[0].name == "Keyword2"
 
+
 def test_delete_paper(paper_service):
-    paper_data = PaperCreate(
-        title="To Be Deleted",
-        url="http://delete.com"
-    )
+    paper_data = PaperCreate(title="To Be Deleted", url="http://delete.com")
     created_paper = paper_service.create_paper(paper_data)
 
     deleted = paper_service.delete_paper(created_paper.id)
     assert deleted is True
     assert paper_service.get_paper(created_paper.id) is None
 
+
 def test_search_papers(paper_service):
-    paper_service.create_paper(PaperCreate(title="Machine Learning in PL", url="http://ml.com", author_names=["John Doe"], keyword_names=["ML", "PL"])) 
-    paper_service.create_paper(PaperCreate(title="Type Systems for AI", url="http://ts.com", author_names=["Jane Smith"], keyword_names=["AI", "Type Systems"])) 
-    paper_service.create_paper(PaperCreate(title="Functional Programming", url="http://fp.com", author_names=["John Doe"], keyword_names=["FP"])) 
+    paper_service.create_paper(
+        PaperCreate(
+            title="Machine Learning in PL",
+            url="http://ml.com",
+            author_names=["John Doe"],
+            keyword_names=["ML", "PL"],
+        )
+    )
+    paper_service.create_paper(
+        PaperCreate(
+            title="Type Systems for AI",
+            url="http://ts.com",
+            author_names=["Jane Smith"],
+            keyword_names=["AI", "Type Systems"],
+        )
+    )
+    paper_service.create_paper(
+        PaperCreate(
+            title="Functional Programming",
+            url="http://fp.com",
+            author_names=["John Doe"],
+            keyword_names=["FP"],
+        )
+    )
 
     results = paper_service.search_papers("PL")
     assert len(results) == 1

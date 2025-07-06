@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ScholarService:
     def __init__(self):
         self.client = arxiv.Client()
@@ -20,20 +21,22 @@ class ScholarService:
             query=search_query,
             max_results=10,
             sort_by=arxiv.SortCriterion.SubmittedDate,
-            sort_order=arxiv.SortOrder.Descending
+            sort_order=arxiv.SortOrder.Descending,
         )
 
         papers_data = []
         try:
             for result in self.client.results(search):
-                papers_data.append({
-                    "title": result.title,
-                    "url": result.pdf_url,
-                    "summary": result.summary,
-                    "authors": [author.name for author in result.authors],
-                    "published_date": result.published,
-                    "arxiv_id": result.entry_id.split('/')[-1]
-                })
+                papers_data.append(
+                    {
+                        "title": result.title,
+                        "url": result.pdf_url,
+                        "summary": result.summary,
+                        "authors": [author.name for author in result.authors],
+                        "published_date": result.published,
+                        "arxiv_id": result.entry_id.split("/")[-1],
+                    }
+                )
         except Exception as e:
             logger.error(f"Error searching arXiv for keyword '{keyword}': {e}")
             # Depending on the desired fault tolerance, you might want to re-raise,

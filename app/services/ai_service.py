@@ -1,6 +1,7 @@
 import openai
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
+
 class AIService:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -12,8 +13,14 @@ class AIService:
             response = await openai.ChatCompletion.acreate(
                 model=model,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that summarizes academic papers."},
-                    {"role": "user", "content": f"Please summarize the following text:\n\n{text}"},
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant that summarizes academic papers.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Please summarize the following text:\n\n{text}",
+                    },
                 ],
             )
             return response.choices[0].message.content.strip()

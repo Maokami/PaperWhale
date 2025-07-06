@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 from app.db.database import Base
 
+
 class Paper(Base):
     __tablename__ = "papers"
 
@@ -11,11 +12,14 @@ class Paper(Base):
     url = Column(String, unique=True, index=True, nullable=False)
     summary = Column(Text, nullable=True)
     published_date = Column(DateTime, default=lambda: datetime.now(UTC))
-    arxiv_id = Column(String, unique=True, nullable=True) # For arXiv papers
+    arxiv_id = Column(String, unique=True, nullable=True)  # For arXiv papers
 
     # Relationships
     authors = relationship("Author", secondary="paper_authors", back_populates="papers")
-    keywords = relationship("Keyword", secondary="paper_keywords", back_populates="papers")
+    keywords = relationship(
+        "Keyword", secondary="paper_keywords", back_populates="papers"
+    )
+
 
 class Author(Base):
     __tablename__ = "authors"
@@ -26,6 +30,7 @@ class Author(Base):
     # Relationships
     papers = relationship("Paper", secondary="paper_authors", back_populates="authors")
 
+
 class Keyword(Base):
     __tablename__ = "keywords"
 
@@ -33,17 +38,22 @@ class Keyword(Base):
     name = Column(String, unique=True, index=True, nullable=False)
 
     # Relationships
-    papers = relationship("Paper", secondary="paper_keywords", back_populates="keywords")
+    papers = relationship(
+        "Paper", secondary="paper_keywords", back_populates="keywords"
+    )
+
 
 class PaperAuthor(Base):
     __tablename__ = "paper_authors"
     paper_id = Column(Integer, ForeignKey("papers.id"), primary_key=True)
     author_id = Column(Integer, ForeignKey("authors.id"), primary_key=True)
 
+
 class PaperKeyword(Base):
     __tablename__ = "paper_keywords"
     paper_id = Column(Integer, ForeignKey("papers.id"), primary_key=True)
     keyword_id = Column(Integer, ForeignKey("keywords.id"), primary_key=True)
+
 
 class User(Base):
     __tablename__ = "users"

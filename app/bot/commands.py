@@ -20,7 +20,10 @@ def register_commands(app: AsyncApp):
                         "element": {
                             "type": "plain_text_input",
                             "action_id": "paper_id_input",
-                            "placeholder": {"type": "plain_text", "text": "요약할 논문의 ID를 입력하세요"},
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "요약할 논문의 ID를 입력하세요",
+                            },
                         },
                     }
                 ],
@@ -67,56 +70,103 @@ def register_commands(app: AsyncApp):
                         "type": "input",
                         "block_id": "paper_title_block",
                         "label": {"type": "plain_text", "text": "제목"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_title_input"},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_title_input",
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_url_block",
                         "label": {"type": "plain_text", "text": "URL"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_url_input", "placeholder": {"type": "plain_text", "text": "https://arxiv.org/abs/2301.00001"}},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_url_input",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "https://arxiv.org/abs/2301.00001",
+                            },
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_bibtex_block",
                         "label": {"type": "plain_text", "text": "BibTeX (선택 사항)"},
-                        "element": {"type": "plain_text_input", "multiline": True, "action_id": "paper_bibtex_input", "placeholder": {"type": "plain_text", "text": "@article{...}"}},
+                        "element": {
+                            "type": "plain_text_input",
+                            "multiline": True,
+                            "action_id": "paper_bibtex_input",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "@article{...}",
+                            },
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_authors_block",
                         "label": {"type": "plain_text", "text": "저자 (쉼표로 구분)"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_authors_input", "placeholder": {"type": "plain_text", "text": "John Doe, Jane Smith"}},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_authors_input",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "John Doe, Jane Smith",
+                            },
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_keywords_block",
                         "label": {"type": "plain_text", "text": "키워드 (쉼표로 구분)"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_keywords_input", "placeholder": {"type": "plain_text", "text": "PL, Type Systems"}},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_keywords_input",
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "PL, Type Systems",
+                            },
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_summary_block",
                         "label": {"type": "plain_text", "text": "요약"},
-                        "element": {"type": "plain_text_input", "multiline": True, "action_id": "paper_summary_input"},
+                        "element": {
+                            "type": "plain_text_input",
+                            "multiline": True,
+                            "action_id": "paper_summary_input",
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_published_date_block",
                         "label": {"type": "plain_text", "text": "발행일 (YYYY-MM-DD)"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_published_date_input","placeholder": {"type": "plain_text", "text": "2023-01-01"}},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_published_date_input",
+                            "placeholder": {"type": "plain_text", "text": "2023-01-01"},
+                        },
                         "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_arxiv_id_block",
-                        "label": {"type": "plain_text", "text": "arXiv ID (예: 2301.00001)"},
-                        "element": {"type": "plain_text_input", "action_id": "paper_arxiv_id_input", "placeholder": {"type": "plain_text", "text": "2301.00001"}},
+                        "label": {
+                            "type": "plain_text",
+                            "text": "arXiv ID (예: 2301.00001)",
+                        },
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "paper_arxiv_id_input",
+                            "placeholder": {"type": "plain_text", "text": "2301.00001"},
+                        },
                         "optional": True,
                     },
                 ],
@@ -137,11 +187,17 @@ def register_commands(app: AsyncApp):
                     {
                         "type": "input",
                         "block_id": "search_query_block",
-                        "label": {"type": "plain_text", "text": "검색어 (제목, 저자, 키워드, 요약)"},
+                        "label": {
+                            "type": "plain_text",
+                            "text": "검색어 (제목, 저자, 키워드, 요약)",
+                        },
                         "element": {
                             "type": "plain_text_input",
                             "action_id": "search_query_input",
-                            "placeholder": {"type": "plain_text", "text": "검색어 입력"}
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "검색어 입력",
+                            },
                         },
                     }
                 ],
@@ -166,7 +222,10 @@ def register_commands(app: AsyncApp):
                         "element": {
                             "type": "plain_text_input",
                             "action_id": "keyword_name_input",
-                            "placeholder": {"type": "plain_text", "text": "예: Reinforcement Learning"}
+                            "placeholder": {
+                                "type": "plain_text",
+                                "text": "예: Reinforcement Learning",
+                            },
                         },
                     }
                 ],

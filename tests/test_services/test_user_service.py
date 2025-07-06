@@ -7,11 +7,14 @@ from app.db.models import User
 
 # Use an in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -23,6 +26,7 @@ def db_session():
     finally:
         session.close()
         Base.metadata.drop_all(bind=engine)
+
 
 def test_get_or_create_user(db_session):
     user_service = UserService(db_session)
@@ -37,6 +41,7 @@ def test_get_or_create_user(db_session):
     user2 = user_service.get_or_create_user(slack_user_id)
     assert user2.id == user1.id
 
+
 def test_update_api_key(db_session):
     user_service = UserService(db_session)
     slack_user_id = "U12345"
@@ -46,6 +51,8 @@ def test_update_api_key(db_session):
     assert user.api_key == api_key
 
     # Verify that the user was created if they didn't exist
-    fetched_user = db_session.query(User).filter(User.slack_user_id == slack_user_id).first()
+    fetched_user = (
+        db_session.query(User).filter(User.slack_user_id == slack_user_id).first()
+    )
     assert fetched_user is not None
     assert fetched_user.api_key == api_key
