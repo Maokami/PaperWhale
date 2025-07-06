@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperwhale-deployment
+  labels:
+    app: paperwhale
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paperwhale
+  template:
+    metadata:
+      labels:
+        app: paperwhale
+    spec:
+      containers:
+      - name: paperwhale
+        image: ghcr.io/maokami/paperwhale:latest
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: db-secret
