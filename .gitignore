@@ -117,3 +117,4 @@ dmypy.json
 .pyre/
 paperwhale.tar
 db-secret.yaml
+k3s.yaml
