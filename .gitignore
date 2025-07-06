@@ -116,3 +116,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 paperwhale.tar
+db-secret.yaml
