@@ -31,3 +31,34 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/maokami/paperwhale:latest
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.K3S_KUBECONFIG }}" > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+
+    - name: Create DB Secret
+      run: |
+        cat <<EOF > db-secret.yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: db-secret
+        type: Opaque
+        stringData:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+        EOF
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f db-secret.yaml
+        kubectl apply -f service.yaml
+        kubectl apply -f deployment.yaml
