@@ -46,7 +46,7 @@ async def _process_add_paper_submission(
     url = state_values["paper_url_block"]["paper_url_input"]["value"]
     authors_str = state_values["paper_authors_block"]["paper_authors_input"]["value"]
     keywords_str = state_values["paper_keywords_block"]["paper_keywords_input"]["value"]
-    summary = state_values["paper_summary_block"]["paper_summary_input"]["value"]
+    final_summary = summary if summary else parsed_bibtex_data.get("summary")
     published_date_str = state_values["paper_published_date_block"][
         "paper_published_date_input"
     ]["value"]
@@ -80,6 +80,7 @@ async def _process_add_paper_submission(
                 parsed_bibtex_data["arxiv_id"] = entry.get(
                     "eprint"
                 )  # Often found in eprint field for arXiv
+                parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get("note") # Use 'abstract' or 'note' for summary
             else:
                 # If the parser returns no entries, emulate the error format
                 # expected by the test suite so that an informative message
@@ -170,7 +171,7 @@ async def _process_add_paper_submission(
         paper_create_data = {
             "title": final_title,
             "url": final_url,
-            "summary": summary,
+            "summary": final_summary,
             "published_date": parsed_published_date,
             "arxiv_id": final_arxiv_id,
             **({"author_names": final_authors} if final_authors else {}),
@@ -193,9 +194,9 @@ async def _process_add_paper_submission(
         if parsed.path in ("", "/") and url_str.endswith("/"):
             paper_create.url = url_str[:-1]
 
-        new_paper = paper_service.create_paper(paper_create)
+        await ack()  # Acknowledge the submission immediately
 
-        await ack()  # Acknowledge after successful processing
+        new_paper = paper_service.create_paper(paper_create)
 
         await client.chat_postMessage(
             channel=user_id,
