@@ -11,3 +11,4 @@ arxiv # For fetching papers from arXiv
 aiohttp # For AsyncSocketModeHandler
 openai
 tenacity
+bibtexparser

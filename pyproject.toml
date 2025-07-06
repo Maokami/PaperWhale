@@ -1,0 +1,36 @@
+[project]
+name = "paperwhale"
+version = "0.1.0"
+description = "A Slack bot for managing academic papers."
+dependencies = [
+    "fastapi",
+    "slack_bolt",
+    "SQLAlchemy",
+    "APScheduler",
+    "uvicorn",
+    "python-dotenv",
+    "pydantic-settings",
+    "asyncpg",
+    "psycopg2-binary",
+    "arxiv",
+    "aiohttp",
+    "openai",
+    "tenacity",
+    "bibtexparser",
+    "pytest",
+    "pytest-asyncio",
+    "uv",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"

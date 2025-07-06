@@ -1,6 +1,6 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, root_validator, ValidationError
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class AuthorBase(BaseModel):
     name: str
@@ -27,8 +27,8 @@ class Keyword(KeywordBase):
         from_attributes = True
 
 class PaperBase(BaseModel):
-    title: str
-    url: HttpUrl
+    title: Optional[str] = None
+    url: Optional[HttpUrl] = None
     summary: Optional[str] = None
     published_date: Optional[datetime] = None
     arxiv_id: Optional[str] = None
@@ -36,6 +36,17 @@ class PaperBase(BaseModel):
 class PaperCreate(PaperBase):
     author_names: List[str] = []
     keyword_names: List[str] = []
+    bibtex: Optional[str] = None
+
+    @root_validator(pre=True)
+    def check_required_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        title = values.get('title')
+        url = values.get('url')
+        bibtex = values.get('bibtex')
+
+        if not bibtex and (not title or not url):
+            raise ValueError('Either bibtex must be provided, or both title and url must be provided.')
+        return values
 
 class PaperUpdate(BaseModel):
     title: Optional[str] = None

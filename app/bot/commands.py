@@ -68,12 +68,21 @@ def register_commands(app: AsyncApp):
                         "block_id": "paper_title_block",
                         "label": {"type": "plain_text", "text": "제목"},
                         "element": {"type": "plain_text_input", "action_id": "paper_title_input"},
+                        "optional": True,
                     },
                     {
                         "type": "input",
                         "block_id": "paper_url_block",
                         "label": {"type": "plain_text", "text": "URL"},
                         "element": {"type": "plain_text_input", "action_id": "paper_url_input", "placeholder": {"type": "plain_text", "text": "https://arxiv.org/abs/2301.00001"}},
+                        "optional": True,
+                    },
+                    {
+                        "type": "input",
+                        "block_id": "paper_bibtex_block",
+                        "label": {"type": "plain_text", "text": "BibTeX (선택 사항)"},
+                        "element": {"type": "plain_text_input", "multiline": True, "action_id": "paper_bibtex_input", "placeholder": {"type": "plain_text", "text": "@article{...}"}},
+                        "optional": True,
                     },
                     {
                         "type": "input",
