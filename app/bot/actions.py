@@ -54,7 +54,6 @@ async def _process_add_paper_submission(
     bibtex_str = state_values["paper_bibtex_block"]["paper_bibtex_input"]["value"]
 
     parsed_bibtex_data = {}
-    final_summary = summary if summary else parsed_bibtex_data.get("summary")
     if bibtex_str:
         try:
             # Use bibtexparser to parse the bibtex string
@@ -108,6 +107,7 @@ async def _process_add_paper_submission(
     # arXiv ID must be resolved *before* URL so we can construct a default URL
     final_arxiv_id = arxiv_id if arxiv_id else parsed_bibtex_data.get("arxiv_id")
     final_url = url if url else parsed_bibtex_data.get("url")
+    final_summary = summary if summary else parsed_bibtex_data.get("summary")
     # If URL is still missing but we have an arXiv ID, construct a default arXiv PDF URL
     if not final_url and final_arxiv_id:
         final_url = f"https://arxiv.org/pdf/{final_arxiv_id}.pdf"
@@ -208,10 +208,35 @@ async def _process_add_paper_submission(
 
         new_paper = paper_service.create_paper(paper_create)
 
-        await client.chat_postMessage(
-            channel=user_id,
-            text=f"논문 '{new_paper.title}'이(가) 성공적으로 추가되었습니다!",
-        )
+        # If no summary was provided and an arXiv ID exists, attempt to summarize using AI
+        if not final_summary and final_arxiv_id:
+            try:
+                user = user_service.get_or_create_user(user_id)
+                if user.api_key:
+                    # Use the paper_service's summarize_paper method
+                    await paper_service.summarize_paper(new_paper.id, user_id)
+                    # Refresh the paper object to get the updated summary
+                    new_paper = paper_service.get_paper(new_paper.id)
+                    await client.chat_postMessage(
+                        channel=user_id,
+                        text=f"Paper '{new_paper.title}' successfully added and summarized!",
+                    )
+                else:
+                    await client.chat_postMessage(
+                        channel=user_id,
+                        text=f"Paper '{new_paper.title}' successfully added. To enable AI summarization, please register your OpenAI API key.",
+                    )
+            except Exception as e:
+                logger.error(f"Failed to auto-summarize paper {new_paper.id}: {e}")
+                await client.chat_postMessage(
+                    channel=user_id,
+                    text=f"Paper '{new_paper.title}' successfully added, but auto-summarization failed: {e}",
+                )
+        else:
+            await client.chat_postMessage(
+                channel=user_id,
+                text=f"Paper '{new_paper.title}' successfully added!",
+            )
 
     except ValidationError as e:
         logger.error(f"Pydantic validation error: {e.errors()}")

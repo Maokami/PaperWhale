@@ -47,7 +47,7 @@ async def test_summarize_text_exception(ai_service):
             },
             {
                 "role": "user",
-                "content": "Please summarize the following text:\n\nThis is a test text.",
+                "content": "Please summarize the following text: \n\nThis is a test text.",
             },
         ]
         # The mock_acreate is called multiple times due to retry, so we check the last call

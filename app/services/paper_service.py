@@ -39,7 +39,9 @@ class PaperService:
             raise ValueError(f"Could not find paper with arXiv ID: {paper.arxiv_id}")
 
         ai_service = AIService(user.api_key)
-        summary = await ai_service.summarize_text(text_to_summarize)
+        summary = await ai_service.summarize_text(
+            text_to_summarize, length_instruction="in three sentences"
+        )
         paper.summary = summary
         self.db.commit()
         return summary

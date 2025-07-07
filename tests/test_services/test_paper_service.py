@@ -76,7 +76,9 @@ async def test_summarize_paper(
     # 3. Assert
     assert summary == generated_summary
     mock_ai_service.assert_called_once_with(api_key)
-    mock_ai_instance.summarize_text.assert_called_once_with(original_summary)
+    mock_ai_instance.summarize_text.assert_called_once_with(
+        original_summary, length_instruction="in three sentences"
+    )
 
     # Verify the summary is saved to the DB
     db_session.commit()

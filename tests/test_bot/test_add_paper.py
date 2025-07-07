@@ -110,7 +110,8 @@ async def test_add_paper_with_bibtex_only(
     # Assertions
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
-        channel="U123", text="논문 'Test BibTeX Paper'이(가) 성공적으로 추가되었습니다!"
+        channel="U123",
+        text="Paper 'Test BibTeX Paper' successfully added. To enable AI summarization, please register your OpenAI API key.",
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
@@ -178,7 +179,7 @@ async def test_add_paper_with_manual_input_only(
 
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
-        channel="U123", text="논문 'Manual Paper'이(가) 성공적으로 추가되었습니다!"
+        channel="U123", text="Paper 'Manual Paper' successfully added!"
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
@@ -253,7 +254,8 @@ async def test_add_paper_with_bibtex_and_manual_override(
 
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
-        channel="U123", text="논문 'Overridden Title'이(가) 성공적으로 추가되었습니다!"
+        channel="U123",
+        text="Paper 'Overridden Title' successfully added. To enable AI summarization, please register your OpenAI API key.",
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
@@ -430,7 +432,7 @@ async def test_add_paper_with_bibtex_minimal_fields(
 
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
-        channel="U123", text="논문 'Minimal BibTeX'이(가) 성공적으로 추가되었습니다!"
+        channel="U123", text="Paper 'Minimal BibTeX' successfully added!"
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
@@ -563,7 +565,8 @@ async def test_add_paper_with_bibtex_only_eprint(
 
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
-        channel="U123", text="논문 'Eprint Only'이(가) 성공적으로 추가되었습니다!"
+        channel="U123",
+        text="Paper 'Eprint Only' successfully added. To enable AI summarization, please register your OpenAI API key.",
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
@@ -630,7 +633,7 @@ async def test_add_paper_with_bibtex_invalid_year(
     ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123",
-        text="논문 'Invalid Year BibTeX'이(가) 성공적으로 추가되었습니다!",
+        text="Paper 'Invalid Year BibTeX' successfully added!",
     )
     paper_service.create_paper.assert_called_once()
     args, _ = paper_service.create_paper.call_args
