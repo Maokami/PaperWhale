@@ -9,7 +9,7 @@ class AIService:
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(5))
     async def summarize_text(
-        self, text: str, model: str = "gemini-pro", length_instruction: str = ""
+        self, text: str, model: str = "gemini-1.5-flash", length_instruction: str = ""
     ) -> str:
         try:
             # For Gemini, we can directly use the generate_content method

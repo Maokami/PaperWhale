@@ -315,7 +315,7 @@ def register_actions(app: AsyncApp):
         paper_service = PaperService(db)
         user_service = UserService(db)
         await ack()
-        await lazy(
+        lazy(
             lazy_process_add_paper_submission,
             body=body,
             client=client,

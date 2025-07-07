@@ -22,7 +22,7 @@ async def test_summarize_text_success(ai_service):
         summary = await ai_service.summarize_text("This is a test text.")
 
         assert summary == "Summarized text."
-        mock_generative_model.assert_called_once_with("gemini-pro")
+        mock_generative_model.assert_called_once_with("gemini-1.5-flash")
         mock_instance.generate_content_async.assert_called_once_with(
             "Please summarize the following text: \n\nThis is a test text."
         )
@@ -44,10 +44,6 @@ async def test_summarize_text_exception(ai_service):
             await ai_service.summarize_text("This is a test text.")
 
         assert "Gemini error" in str(excinfo.value.last_attempt.exception())
-        # mock_generative_model.assert_called_once_with("gemini-pro") # Removed this assertion
-        # mock_instance.generate_content_async.assert_called_once_with(
-        #     "Please summarize the following text: \n\nThis is a test text."
-        # ) # Removed this assertion
         assert mock_instance.generate_content_async.call_args == (
             ("Please summarize the following text: \n\nThis is a test text.",),
             {},
