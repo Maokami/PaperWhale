@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db.models import Base, User, Paper
 from app.services.paper_service import PaperService
 from app.services.user_service import UserService
-from app.bot.actions import _process_add_paper_submission
+from app.bot.actions import lazy_process_add_paper_submission
 
 # Setup a test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -41,11 +41,10 @@ def user_service(db_session):
 
 @pytest.fixture
 def mock_slack_context():
-    ack = AsyncMock()
     client = MagicMock()
     client.chat_postMessage = AsyncMock()
     logger = MagicMock()
-    return ack, client, logger
+    return client, logger
 
 
 @pytest.mark.asyncio
@@ -53,7 +52,7 @@ def mock_slack_context():
 async def test_add_paper_with_bibtex_only(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     # Mock PaperService.create_paper to return a dummy paper
@@ -103,12 +102,11 @@ async def test_add_paper_with_bibtex_only(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
     # Assertions
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123",
         text="Paper 'Test BibTeX Paper' successfully added. To enable AI summarization, please register your OpenAI API key.",
@@ -129,7 +127,7 @@ async def test_add_paper_with_bibtex_only(
 async def test_add_paper_with_manual_input_only(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -173,11 +171,10 @@ async def test_add_paper_with_manual_input_only(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123", text="Paper 'Manual Paper' successfully added!"
     )
@@ -196,7 +193,7 @@ async def test_add_paper_with_manual_input_only(
 async def test_add_paper_with_bibtex_and_manual_override(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -248,11 +245,10 @@ async def test_add_paper_with_bibtex_and_manual_override(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123",
         text="Paper 'Overridden Title' successfully added. To enable AI summarization, please register your OpenAI API key.",
@@ -275,7 +271,7 @@ async def test_add_paper_with_bibtex_and_manual_override(
 async def test_add_paper_with_invalid_bibtex(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     user_service.get_or_create_user = MagicMock(
@@ -312,17 +308,14 @@ This is not a valid bibtex entry.
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once_with(
-        response_action="errors",
-        errors={
-            "paper_bibtex_block": "BibTeX 파싱 오류: Expecting an entry, got 'This is not a valid bibtex entry.\n@article{'"
-        },
+    client.chat_postMessage.assert_called_once_with(
+        channel="U123",
+        text="BibTeX 파싱 오류: Expecting an entry, got 'This is not a valid bibtex entry.\n@article{'",
     )
-    client.chat_postMessage.assert_not_called()
     paper_service.create_paper.assert_not_called()
 
 
@@ -331,7 +324,7 @@ This is not a valid bibtex entry.
 async def test_add_paper_with_missing_required_fields(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     user_service.get_or_create_user = MagicMock(
@@ -363,19 +356,14 @@ async def test_add_paper_with_missing_required_fields(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
-    args, kwargs = ack.call_args
-    assert kwargs["response_action"] == "errors"
-    assert "paper_title_block" in kwargs["errors"]
-    assert (
-        "Either bibtex must be provided, or both title and url must be provided."
-        in kwargs["errors"]["paper_title_block"]
+    client.chat_postMessage.assert_called_once_with(
+        channel="U123",
+        text="Either bibtex must be provided, or both title and url must be provided.",
     )
-    client.chat_postMessage.assert_not_called()
     paper_service.create_paper.assert_not_called()
 
 
@@ -384,7 +372,7 @@ async def test_add_paper_with_missing_required_fields(
 async def test_add_paper_with_bibtex_minimal_fields(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -426,11 +414,10 @@ async def test_add_paper_with_bibtex_minimal_fields(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123", text="Paper 'Minimal BibTeX' successfully added!"
     )
@@ -450,7 +437,7 @@ async def test_add_paper_with_bibtex_minimal_fields(
 async def test_add_paper_with_bibtex_no_url_or_arxiv_id(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -493,20 +480,14 @@ async def test_add_paper_with_bibtex_no_url_or_arxiv_id(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
-    # Expecting an error because neither manual URL nor BibTeX URL/eprint is provided
-    args, kwargs = ack.call_args
-    assert kwargs["response_action"] == "errors"
-    assert "paper_title_block" in kwargs["errors"]
-    assert (
-        "Either bibtex must be provided, or both title and url must be provided."
-        in kwargs["errors"]["paper_title_block"]
+    client.chat_postMessage.assert_called_once_with(
+        channel="U123",
+        text="Either bibtex must be provided, or both title and url must be provided.",
     )
-    client.chat_postMessage.assert_not_called()
     paper_service.create_paper.assert_not_called()
 
 
@@ -515,7 +496,7 @@ async def test_add_paper_with_bibtex_no_url_or_arxiv_id(
 async def test_add_paper_with_bibtex_only_eprint(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -559,11 +540,10 @@ async def test_add_paper_with_bibtex_only_eprint(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123",
         text="Paper 'Eprint Only' successfully added. To enable AI summarization, please register your OpenAI API key.",
@@ -582,7 +562,7 @@ async def test_add_paper_with_bibtex_only_eprint(
 async def test_add_paper_with_bibtex_invalid_year(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     paper_service.create_paper = MagicMock(
@@ -626,11 +606,10 @@ async def test_add_paper_with_bibtex_invalid_year(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once()
     client.chat_postMessage.assert_called_once_with(
         channel="U123",
         text="Paper 'Invalid Year BibTeX' successfully added!",
@@ -651,7 +630,7 @@ async def test_add_paper_with_bibtex_invalid_year(
 async def test_add_paper_with_existing_url(
     mock_get_db, db_session, paper_service, user_service, mock_slack_context
 ):
-    ack, client, logger = mock_slack_context
+    client, logger = mock_slack_context
     mock_get_db.return_value = iter([db_session])
 
     # Mock an existing paper
@@ -692,16 +671,15 @@ async def test_add_paper_with_existing_url(
         patch("app.services.paper_service.PaperService", return_value=paper_service),
         patch("app.services.user_service.UserService", return_value=user_service),
     ):
-        await _process_add_paper_submission(
-            ack, body, client, logger, db_session, paper_service, user_service
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
         )
 
-    ack.assert_called_once_with(
-        response_action="errors",
-        errors={"paper_url_block": f"이미 존재하는 논문입니다: {existing_paper.title}"},
+    client.chat_postMessage.assert_called_once_with(
+        channel="U123",
+        text=f"이미 존재하는 논문입니다: {existing_paper.title}",
     )
     paper_service.get_paper_by_url_or_arxiv_id.assert_called_once_with(
         url="http://existing.com", arxiv_id=None
     )
     paper_service.create_paper.assert_not_called()
-    client.chat_postMessage.assert_not_called()

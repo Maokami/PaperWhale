@@ -1,15 +1,15 @@
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
-
-# Import the main app
-from app.main import app
 
 
 @pytest.fixture(scope="module")
 def client():
-    with TestClient(app) as c:
-        yield c
+    with patch("slack_bolt.async_app.AsyncApp", new_callable=MagicMock):
+        from app.main import app
+
+        with TestClient(app) as c:
+            yield c
 
 
 @pytest.mark.asyncio

@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import ValidationError
 import bibtexparser
 from unittest.mock import MagicMock
+from slack_sdk.web.async_client import AsyncWebClient
 
 
 # --- BibTeX author parsing helper
@@ -31,150 +32,154 @@ def _parse_bibtex_authors(authors_field: str) -> list[str]:
     return parsed
 
 
-async def _process_add_paper_submission(
-    ack, body, client, logger, db, paper_service, user_service
+async def lazy_process_add_paper_submission(
+    body: dict, client: AsyncWebClient, logger, db, paper_service, user_service
 ):
     # Ensure `create_paper` always supports `assert_not_called` in tests
     if not isinstance(getattr(paper_service, "create_paper", None), MagicMock):
         _orig_create = paper_service.create_paper
         paper_service.create_paper = MagicMock(side_effect=_orig_create)
     user_id = body["user"]["id"]
-    state_values = body["view"]["state"]["values"]
-
-    # Get values from Slack modal
-    title = state_values["paper_title_block"]["paper_title_input"]["value"]
-    url = state_values["paper_url_block"]["paper_url_input"]["value"]
-    authors_str = state_values["paper_authors_block"]["paper_authors_input"]["value"]
-    keywords_str = state_values["paper_keywords_block"]["paper_keywords_input"]["value"]
-    summary = state_values["paper_summary_block"]["paper_summary_input"]["value"]
-    published_date_str = state_values["paper_published_date_block"][
-        "paper_published_date_input"
-    ]["value"]
-    arxiv_id = state_values["paper_arxiv_id_block"]["paper_arxiv_id_input"]["value"]
-    bibtex_str = state_values["paper_bibtex_block"]["paper_bibtex_input"]["value"]
-
-    parsed_bibtex_data = {}
-    if bibtex_str:
-        try:
-            # Use bibtexparser to parse the bibtex string
-            bib_database = bibtexparser.loads(bibtex_str)
-            if bib_database.entries:
-                # Assuming only one entry for simplicity, take the first one
-                entry = bib_database.entries[0]
-                parsed_bibtex_data["title"] = entry.get("title")
-                # Prefer explicit URL; if absent we'll build one later from the arXiv ID.
-                parsed_bibtex_data["url"] = entry.get("url")
-                parsed_bibtex_data["authors"] = _parse_bibtex_authors(
-                    entry.get("author", "")
-                )
-                # Attempt to parse year for published_date
-                if "year" in entry:
-                    try:
-                        # Use January 1st of the given year
-                        parsed_bibtex_data["published_date"] = datetime(
-                            int(entry["year"]), 1, 1
-                        )
-                    except (ValueError, TypeError):
-                        # Invalid or non‑numeric year – default to the current datetime so the field is never None
-                        parsed_bibtex_data["published_date"] = datetime.now()
-                parsed_bibtex_data["arxiv_id"] = entry.get(
-                    "eprint"
-                )  # Often found in eprint field for arXiv
-                parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get(
-                    "note"
-                )  # Use 'abstract' or 'note' for summary
-                parsed_bibtex_data["keywords"] = [
-                    k.strip() for k in entry.get("keywords", "").split(",") if k.strip()
-                ]  # Parse keywords from BibTeX
-            else:
-                # If the parser returns no entries, emulate the error format
-                # expected by the test suite so that an informative message
-                # is surfaced to the user.
-                raise ValueError(f"Expecting an entry, got '{bibtex_str.strip()}'")
-
-        except Exception as e:
-            logger.error(f"BibTeX parsing error: {e}")
-            await ack(
-                response_action="errors",
-                errors={"paper_bibtex_block": f"BibTeX 파싱 오류: {e}"},
-            )
-            return
-
-    # ---------------------------------------------------------------------
-    # Combine manual input with parsed BibTeX data, prioritizing manual input
-    # ---------------------------------------------------------------------
-    final_title = title if title else parsed_bibtex_data.get("title")
-    # arXiv ID must be resolved *before* URL so we can construct a default URL
-    final_arxiv_id = arxiv_id if arxiv_id else parsed_bibtex_data.get("arxiv_id")
-    final_url = url if url else parsed_bibtex_data.get("url")
-    final_summary = summary if summary else parsed_bibtex_data.get("summary")
-    # If URL is still missing but we have an arXiv ID, construct a default arXiv PDF URL
-    if not final_url and final_arxiv_id:
-        final_url = f"https://arxiv.org/pdf/{final_arxiv_id}.pdf"
-
-    final_authors = (
-        authors_str if authors_str else parsed_bibtex_data.get("authors", [])
-    )
-    final_published_date = (
-        published_date_str
-        if published_date_str
-        else (
-            parsed_bibtex_data.get("published_date").strftime("%Y-%m-%d")
-            if parsed_bibtex_data.get("published_date")
-            else None
-        )
-    )
-
-    # Normalize authors and keywords to lists
-    if isinstance(final_authors, str):
-        final_authors = [a.strip() for a in final_authors.split(",") if a.strip()]
-
-    # Normalise keyword string to list
-    final_keyword_names = [
-        k.strip() for k in (keywords_str or "").split(",") if k.strip()
-    ]
-    if not final_keyword_names and parsed_bibtex_data.get("keywords"):
-        final_keyword_names = parsed_bibtex_data["keywords"]
-
-    # Ensure authors and keywords are always lists
-    if final_authors is None:
-        final_authors = []
-
-    # Validate that we have at least (title and url) or a parsable bibtex that provided them
-    if not final_title or not final_url:
-        await ack(
-            response_action="errors",
-            errors={
-                "paper_title_block": "Either bibtex must be provided, or both title and url must be provided."
-            },
-        )
-        return
-
-    # Convert published_date string to datetime object
-    parsed_published_date = None
-    if final_published_date:
-        try:
-            parsed_published_date = datetime.strptime(final_published_date, "%Y-%m-%d")
-        except ValueError:
-            await ack(
-                response_action="errors",
-                errors={
-                    "paper_published_date_block": "날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해주세요."
-                },
-            )
-            return
-
     try:
+        state_values = body["view"]["state"]["values"]
+
+        # Get values from Slack modal
+        title = state_values["paper_title_block"]["paper_title_input"]["value"]
+        url = state_values["paper_url_block"]["paper_url_input"]["value"]
+        authors_str = state_values["paper_authors_block"]["paper_authors_input"][
+            "value"
+        ]
+        keywords_str = state_values["paper_keywords_block"]["paper_keywords_input"][
+            "value"
+        ]
+        summary = state_values["paper_summary_block"]["paper_summary_input"]["value"]
+        published_date_str = state_values["paper_published_date_block"][
+            "paper_published_date_input"
+        ]["value"]
+        arxiv_id = state_values["paper_arxiv_id_block"]["paper_arxiv_id_input"]["value"]
+        bibtex_str = state_values["paper_bibtex_block"]["paper_bibtex_input"]["value"]
+
+        parsed_bibtex_data = {}
+        if bibtex_str:
+            try:
+                # Use bibtexparser to parse the bibtex string
+                bib_database = bibtexparser.loads(bibtex_str)
+                if bib_database.entries:
+                    # Assuming only one entry for simplicity, take the first one
+                    entry = bib_database.entries[0]
+                    parsed_bibtex_data["title"] = entry.get("title")
+                    # Prefer explicit URL; if absent we'll build one later from the arXiv ID.
+                    parsed_bibtex_data["url"] = entry.get("url")
+                    parsed_bibtex_data["authors"] = _parse_bibtex_authors(
+                        entry.get("author", "")
+                    )
+                    # Attempt to parse year for published_date
+                    if "year" in entry:
+                        try:
+                            # Use January
+                            # 1st of the given year
+                            parsed_bibtex_data["published_date"] = datetime(
+                                int(entry["year"]), 1, 1
+                            )
+                        except (ValueError, TypeError):
+                            # Invalid or non
+                            # numeric year – default to the current datetime so the field is never None
+                            parsed_bibtex_data["published_date"] = datetime.now()
+                    parsed_bibtex_data["arxiv_id"] = entry.get(
+                        "eprint"
+                    )  # Often found in eprint field for arXiv
+                    parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get(
+                        "note"
+                    )  # Use 'abstract' or 'note' for summary
+                    parsed_bibtex_data["keywords"] = [
+                        k.strip()
+                        for k in entry.get("keywords", "").split(",")
+                        if k.strip()
+                    ]  # Parse keywords from BibTeX
+                else:
+                    # If the parser returns no entries, emulate the error format
+                    # expected by the test suite so that an informative message
+                    # is surfaced to the user.
+                    raise ValueError(f"Expecting an entry, got '{bibtex_str.strip()}'")
+
+            except Exception as e:
+                logger.error(f"BibTeX parsing error: {e}")
+                await client.chat_postMessage(
+                    channel=user_id,
+                    text=f"BibTeX 파싱 오류: {e}",
+                )
+                return
+
+        # ---------------------------------------------------------------------
+        # Combine manual input with parsed BibTeX data, prioritizing manual input
+        # ---------------------------------------------------------------------
+        final_title = title if title else parsed_bibtex_data.get("title")
+        # arXiv ID must be resolved *before* URL so we can construct a default URL
+        final_arxiv_id = arxiv_id if arxiv_id else parsed_bibtex_data.get("arxiv_id")
+        final_url = url if url else parsed_bibtex_data.get("url")
+        final_summary = summary if summary else parsed_bibtex_data.get("summary")
+        # If URL is still missing but we have an arXiv ID, construct a default arXiv PDF URL
+        if not final_url and final_arxiv_id:
+            final_url = f"https://arxiv.org/pdf/{final_arxiv_id}.pdf"
+
+        final_authors = (
+            authors_str if authors_str else parsed_bibtex_data.get("authors", [])
+        )
+        final_published_date = (
+            published_date_str
+            if published_date_str
+            else (
+                parsed_bibtex_data.get("published_date").strftime("%Y-%m-%d")
+                if parsed_bibtex_data.get("published_date")
+                else None
+            )
+        )
+
+        # Normalize authors and keywords to lists
+        if isinstance(final_authors, str):
+            final_authors = [a.strip() for a in final_authors.split(",") if a.strip()]
+
+        # Normalise keyword string to list
+        final_keyword_names = [
+            k.strip() for k in (keywords_str or "").split(",") if k.strip()
+        ]
+        if not final_keyword_names and parsed_bibtex_data.get("keywords"):
+            final_keyword_names = parsed_bibtex_data["keywords"]
+
+        # Ensure authors and keywords are always lists
+        if final_authors is None:
+            final_authors = []
+
+        # Validate that we have at least (title and url) or a parsable bibtex that provided them
+        if not final_title or not final_url:
+            await client.chat_postMessage(
+                channel=user_id,
+                text="Either bibtex must be provided, or both title and url must be provided.",
+            )
+            return
+
+        # Convert published_date string to datetime object
+        parsed_published_date = None
+        if final_published_date:
+            try:
+                parsed_published_date = datetime.strptime(
+                    final_published_date, "%Y-%m-%d"
+                )
+            except ValueError:
+                await client.chat_postMessage(
+                    channel=user_id,
+                    text="날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력해주세요.",
+                )
+                return
+
         # Check for existing paper before creating
         existing_paper = paper_service.get_paper_by_url_or_arxiv_id(
             url=final_url, arxiv_id=final_arxiv_id
         )
         if existing_paper is not None:
-            await ack(
-                response_action="errors",
-                errors={
-                    "paper_url_block": f"이미 존재하는 논문입니다: {existing_paper.title}"
-                },
+            await client.chat_postMessage(
+                channel=user_id,
+                text=f"이미 존재하는 논문입니다: {existing_paper.title}",
             )
             return
 
@@ -203,8 +208,6 @@ async def _process_add_paper_submission(
         parsed = urlparse(url_str)
         if parsed.path in ("", "/") and url_str.endswith("/"):
             paper_create.url = url_str[:-1]
-
-        await ack()  # Acknowledge the submission immediately
 
         new_paper = paper_service.create_paper(paper_create)
 
@@ -240,28 +243,18 @@ async def _process_add_paper_submission(
 
     except ValidationError as e:
         logger.error(f"Pydantic validation error: {e.errors()}")
-        errors = {}
-        for error in e.errors():
-            # Map Pydantic errors to Slack block_id for display
-            if error["loc"][0] == "title":
-                errors["paper_title_block"] = error["msg"]
-            elif error["loc"][0] == "url":
-                errors["paper_url_block"] = error["msg"]
-            elif error["loc"][0] == "bibtex":
-                errors["paper_bibtex_block"] = error["msg"]
-            else:
-                # Generic error for other fields
-                errors["paper_title_block"] = f"입력 오류: {error['msg']}"
-        await ack(
-            response_action="errors",
-            errors=errors,
+        await client.chat_postMessage(
+            channel=user_id,
+            text=f"입력 오류: {e.errors()}",
         )
     except Exception as e:
         logger.error(f"Failed to add paper: {e}")
-        await ack(
-            response_action="errors",
-            errors={"paper_title_block": f"논문 추가 중 오류가 발생했습니다: {e}"},
+        await client.chat_postMessage(
+            channel=user_id,
+            text=f"논문 추가 중 오류가 발생했습니다: {e}",
         )
+    finally:
+        db.close()
 
 
 def register_actions(app: AsyncApp):
@@ -319,14 +312,20 @@ def register_actions(app: AsyncApp):
             )
 
     @app.view("add_paper_modal")
-    async def handle_add_paper_modal_submission(ack, body, client, logger):
+    async def handle_add_paper_modal_submission(ack, body, client, logger, lazy):
         db = next(get_db())
         paper_service = PaperService(db)
         user_service = UserService(db)
-        await _process_add_paper_submission(
-            ack, body, client, logger, db, paper_service, user_service
+        await ack()
+        await lazy(
+            lazy_process_add_paper_submission,
+            body=body,
+            client=client,
+            logger=logger,
+            db=db,
+            paper_service=paper_service,
+            user_service=user_service,
         )
-        db.close()
 
     @app.view("search_paper_modal")
     async def handle_search_paper_modal_submission(ack, body, client, logger):

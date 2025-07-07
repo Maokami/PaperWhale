@@ -2,12 +2,14 @@ from slack_bolt.async_app import AsyncApp
 from app.core.config import settings
 from app.bot.commands import register_commands
 from app.bot.actions import register_actions
+from concurrent.futures import ThreadPoolExecutor
 
 # Initialize Slack Bolt app
 slack_app = AsyncApp(
     token=settings.SLACK_BOT_TOKEN,
     signing_secret=settings.SLACK_SIGNING_SECRET,
     request_verification_enabled=False,
+    executor=ThreadPoolExecutor(max_workers=5),
 )
 
 register_commands(slack_app)
