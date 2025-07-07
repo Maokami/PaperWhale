@@ -1,20 +1,21 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.db.database import init_db
 from app.core.scheduler import start_scheduler, shutdown_scheduler
 
-# Initialize FastAPI app
-app = FastAPI()
 
-
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     init_db()
     await start_scheduler()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
+    yield
+    # Shutdown
     await shutdown_scheduler()
+
+
+# Initialize FastAPI app
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/")

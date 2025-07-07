@@ -38,47 +38,55 @@ async def check_for_new_papers_async():
                 keyword_to_users[uk.keyword.name].append(uk.user.slack_user_id)
 
         for keyword_name, user_ids in keyword_to_users.items():
-            print(f"Checking for new papers for keyword: {keyword_name}")
-            new_papers_data = scholar_service.search_new_papers(keyword_name)
-            for paper_data in new_papers_data:
-                # Check for duplicates before saving
-                existing_paper = (
-                    db.query(Paper)
-                    .filter(
-                        (Paper.arxiv_id == paper_data.get("arxiv_id"))
-                        | (Paper.url == paper_data.get("url"))
-                    )
-                    .first()
-                )
-
-                if not existing_paper:
-                    paper_create = PaperCreate(
-                        title=paper_data.get("title", "N/A"),
-                        url=paper_data.get("url", "#"),
-                        summary=paper_data.get("summary", "N/A"),
-                        published_date=paper_data.get("published_date"),
-                        arxiv_id=paper_data.get("arxiv_id"),
-                        author_names=paper_data.get("authors", []),
-                        keyword_names=[keyword_name],
-                    )
-                    paper_service = PaperService(db)
-                    new_paper = paper_service.create_paper(paper_create)
-
-                    for user_id in user_ids:
-                        await slack_service.send_new_paper_notification(
-                            user_id=user_id,
-                            paper_title=new_paper.title,
-                            paper_url=new_paper.url,
-                            summary=new_paper.summary or "N/A",
-                            authors=", ".join(
-                                [author.name for author in new_paper.authors]
-                            ),
-                            keywords=", ".join(
-                                [keyword.name for keyword in new_paper.keywords]
-                            ),
+            try:
+                new_papers_data = scholar_service.search_new_papers(keyword_name)
+                for paper_data in new_papers_data:
+                    # Check for duplicates before saving
+                    existing_paper = (
+                        db.query(Paper)
+                        .filter(
+                            (Paper.arxiv_id == paper_data.get("arxiv_id"))
+                            | (Paper.url == paper_data.get("url"))
                         )
-                else:
-                    print(f"Paper already exists: {existing_paper.title}")
+                        .first()
+                    )
+
+                    if not existing_paper:
+                        paper_create = PaperCreate(
+                            title=paper_data.get("title", "N/A"),
+                            url=paper_data.get("url", "#"),
+                            summary=paper_data.get("summary", "N/A"),
+                            published_date=paper_data.get("published_date"),
+                            arxiv_id=paper_data.get("arxiv_id"),
+                            author_names=paper_data.get("authors", []),
+                            keyword_names=[keyword_name],
+                        )
+                        paper_service = PaperService(db)
+                        new_paper = paper_service.create_paper(paper_create)
+
+                        for user_id in user_ids:
+                            try:
+                                await slack_service.send_new_paper_notification(
+                                    user_id=user_id,
+                                    paper_title=new_paper.title,
+                                    paper_url=new_paper.url,
+                                    summary=new_paper.summary or "N/A",
+                                    authors=", ".join(
+                                        [author.name for author in new_paper.authors]
+                                    ),
+                                    keywords=", ".join(
+                                        [keyword.name for keyword in new_paper.keywords]
+                                    ),
+                                )
+                            except Exception:
+                                # print(f"Error sending Slack notification for user {user_id}: {e}")
+                                raise
+
+                    else:
+                        print(f"Paper already exists: {existing_paper.title}")
+            except Exception as e:
+                print(f"Error checking for new papers for keyword {keyword_name}: {e}")
+                raise
     finally:
         db.close()
 

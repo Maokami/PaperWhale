@@ -46,7 +46,7 @@ async def _process_add_paper_submission(
     url = state_values["paper_url_block"]["paper_url_input"]["value"]
     authors_str = state_values["paper_authors_block"]["paper_authors_input"]["value"]
     keywords_str = state_values["paper_keywords_block"]["paper_keywords_input"]["value"]
-    final_summary = summary if summary else parsed_bibtex_data.get("summary")
+    summary = state_values["paper_summary_block"]["paper_summary_input"]["value"]
     published_date_str = state_values["paper_published_date_block"][
         "paper_published_date_input"
     ]["value"]
@@ -54,6 +54,7 @@ async def _process_add_paper_submission(
     bibtex_str = state_values["paper_bibtex_block"]["paper_bibtex_input"]["value"]
 
     parsed_bibtex_data = {}
+    final_summary = summary if summary else parsed_bibtex_data.get("summary")
     if bibtex_str:
         try:
             # Use bibtexparser to parse the bibtex string
@@ -80,8 +81,12 @@ async def _process_add_paper_submission(
                 parsed_bibtex_data["arxiv_id"] = entry.get(
                     "eprint"
                 )  # Often found in eprint field for arXiv
-                parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get("note") # Use 'abstract' or 'note' for summary
-                parsed_bibtex_data["keywords"] = [k.strip() for k in entry.get("keywords", "").split(",") if k.strip()] # Parse keywords from BibTeX
+                parsed_bibtex_data["summary"] = entry.get("abstract") or entry.get(
+                    "note"
+                )  # Use 'abstract' or 'note' for summary
+                parsed_bibtex_data["keywords"] = [
+                    k.strip() for k in entry.get("keywords", "").split(",") if k.strip()
+                ]  # Parse keywords from BibTeX
             else:
                 # If the parser returns no entries, emulate the error format
                 # expected by the test suite so that an informative message
@@ -125,7 +130,9 @@ async def _process_add_paper_submission(
         final_authors = [a.strip() for a in final_authors.split(",") if a.strip()]
 
     # Normalise keyword string to list
-    final_keyword_names = [k.strip() for k in (keywords_str or "").split(",") if k.strip()]
+    final_keyword_names = [
+        k.strip() for k in (keywords_str or "").split(",") if k.strip()
+    ]
     if not final_keyword_names and parsed_bibtex_data.get("keywords"):
         final_keyword_names = parsed_bibtex_data["keywords"]
 

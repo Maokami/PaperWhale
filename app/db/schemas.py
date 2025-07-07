@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, root_validator
+from pydantic import BaseModel, HttpUrl, model_validator, ConfigDict
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
@@ -13,9 +13,7 @@ class AuthorCreate(AuthorBase):
 
 class Author(AuthorBase):
     id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class KeywordBase(BaseModel):
@@ -28,9 +26,7 @@ class KeywordCreate(KeywordBase):
 
 class Keyword(KeywordBase):
     id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaperBase(BaseModel):
@@ -46,7 +42,7 @@ class PaperCreate(PaperBase):
     keyword_names: List[str] = []
     bibtex: Optional[str] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     def check_required_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         title = values.get("title")
         url = values.get("url")
@@ -73,9 +69,7 @@ class Paper(PaperBase):
     id: int
     authors: List[Author] = []
     keywords: List[Keyword] = []
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserKeywordBase(BaseModel):
@@ -90,9 +84,7 @@ class UserKeywordCreate(UserKeywordBase):
 class UserKeyword(UserKeywordBase):
     id: int
     keyword: Keyword
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserAuthorBase(BaseModel):
@@ -107,6 +99,4 @@ class UserAuthorCreate(UserAuthorBase):
 class UserAuthor(UserAuthorBase):
     id: int
     author: Author
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

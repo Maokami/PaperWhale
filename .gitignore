@@ -119,3 +119,7 @@ paperwhale.tar
 db-secret.yaml
 k3s.yaml
 slack-secrets.yaml
+
+# Database files
+*.db
+*.db-journal
