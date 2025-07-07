@@ -76,14 +76,28 @@ async def lazy_process_add_paper_submission(
                     # Attempt to parse year for published_date
                     if "year" in entry:
                         try:
-                            # Use January
-                            # 1st of the given year
+                            year = int(entry["year"])
+                            month_str = entry.get("month", "jan")
+                            # Convert month abbreviation to number
+                            month_map = {
+                                "jan": 1,
+                                "feb": 2,
+                                "mar": 3,
+                                "apr": 4,
+                                "may": 5,
+                                "jun": 6,
+                                "jul": 7,
+                                "aug": 8,
+                                "sep": 9,
+                                "oct": 10,
+                                "nov": 11,
+                                "dec": 12,
+                            }
+                            month = month_map.get(month_str.lower()[:3], 1)
                             parsed_bibtex_data["published_date"] = datetime(
-                                int(entry["year"]), 1, 1
+                                year, month, 1
                             )
                         except (ValueError, TypeError):
-                            # Invalid or non
-                            # numeric year – default to the current datetime so the field is never None
                             parsed_bibtex_data["published_date"] = datetime.now()
                     parsed_bibtex_data["arxiv_id"] = entry.get(
                         "eprint"
@@ -123,7 +137,9 @@ async def lazy_process_add_paper_submission(
             final_url = f"https://arxiv.org/pdf/{final_arxiv_id}.pdf"
 
         final_authors = (
-            authors_str if authors_str else parsed_bibtex_data.get("authors", [])
+            [a.strip() for a in authors_str.split(",") if a.strip()]
+            if authors_str
+            else parsed_bibtex_data.get("authors", [])
         )
         final_published_date = (
             published_date_str
@@ -140,11 +156,11 @@ async def lazy_process_add_paper_submission(
             final_authors = [a.strip() for a in final_authors.split(",") if a.strip()]
 
         # Normalise keyword string to list
-        final_keyword_names = [
-            k.strip() for k in (keywords_str or "").split(",") if k.strip()
-        ]
-        if not final_keyword_names and parsed_bibtex_data.get("keywords"):
-            final_keyword_names = parsed_bibtex_data["keywords"]
+        final_keyword_names = (
+            [k.strip() for k in keywords_str.split(",") if k.strip()]
+            if keywords_str
+            else parsed_bibtex_data.get("keywords", [])
+        )
 
         # Ensure authors and keywords are always lists
         if final_authors is None:

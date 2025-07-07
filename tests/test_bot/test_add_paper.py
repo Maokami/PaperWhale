@@ -683,3 +683,89 @@ async def test_add_paper_with_existing_url(
         url="http://existing.com", arxiv_id=None
     )
     paper_service.create_paper.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("app.db.database.get_db")
+async def test_add_paper_with_full_bibtex(
+    mock_get_db, db_session, paper_service, user_service, mock_slack_context
+):
+    client, logger = mock_slack_context
+    mock_get_db.return_value = iter([db_session])
+
+    paper_service.create_paper = MagicMock(
+        return_value=Paper(
+            id=100,
+            title="A Fictional Study on AI-Powered Code Generation",
+            url="https://doi.org/10.9999/fake.paper",
+        )
+    )
+    user_service.get_or_create_user = MagicMock(
+        return_value=User(id=1, slack_user_id="U123")
+    )
+
+    bibtex_str = """
+@article{fictional2024ai,
+    author = {Smith, John and Doe, Jane},
+    title = {A Fictional Study on AI-Powered Code Generation},
+    year = {2024},
+    issue_date = {October 2024},
+    publisher = {Fictional Publishing},
+    address = {Imaginary City, IC},
+    volume = {1},
+    number = {1},
+    url = {https://doi.org/10.9999/fake.paper},
+    doi = {10.9999/fake.paper},
+    abstract = {This paper presents a novel approach to generating code using advanced AI techniques. We explore the challenges and opportunities of this emerging field.},
+    journal = {Journal of Fictional Computer Science},
+    month = oct,
+    keywords = {AI, Code Generation, Software Engineering, Fictional Science}
+}
+"""
+    body = {
+        "user": {"id": "U123"},
+        "view": {
+            "state": {
+                "values": {
+                    "paper_title_block": {"paper_title_input": {"value": ""}},
+                    "paper_url_block": {"paper_url_input": {"value": ""}},
+                    "paper_authors_block": {"paper_authors_input": {"value": ""}},
+                    "paper_keywords_block": {"paper_keywords_input": {"value": ""}},
+                    "paper_summary_block": {"paper_summary_input": {"value": ""}},
+                    "paper_published_date_block": {
+                        "paper_published_date_input": {"value": ""}
+                    },
+                    "paper_arxiv_id_block": {"paper_arxiv_id_input": {"value": ""}},
+                    "paper_bibtex_block": {"paper_bibtex_input": {"value": bibtex_str}},
+                }
+            }
+        },
+    }
+
+    with (
+        patch("app.services.paper_service.PaperService", return_value=paper_service),
+        patch("app.services.user_service.UserService", return_value=user_service),
+    ):
+        await lazy_process_add_paper_submission(
+            body, client, logger, db_session, paper_service, user_service
+        )
+
+    client.chat_postMessage.assert_called_once_with(
+        channel="U123",
+        text="Paper 'A Fictional Study on AI-Powered Code Generation' successfully added!",
+    )
+    paper_service.create_paper.assert_called_once()
+    args, _ = paper_service.create_paper.call_args
+    created_paper_data = args[0]
+    assert created_paper_data.title == "A Fictional Study on AI-Powered Code Generation"
+    assert str(created_paper_data.url) == "https://doi.org/10.9999/fake.paper"
+    assert "John Smith" in created_paper_data.author_names
+    assert "Jane Doe" in created_paper_data.author_names
+    assert created_paper_data.published_date.year == 2024
+    assert created_paper_data.published_date.month == 10
+    assert "AI" in created_paper_data.keyword_names
+    assert "Code Generation" in created_paper_data.keyword_names
+    assert "Software Engineering" in created_paper_data.keyword_names
+    assert "Fictional Science" in created_paper_data.keyword_names
+    assert "This paper presents a novel approach" in created_paper_data.summary
+    assert created_paper_data.bibtex == bibtex_str
