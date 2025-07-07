@@ -11,27 +11,6 @@ from unittest.mock import MagicMock
 from slack_sdk.web.async_client import AsyncWebClient
 
 
-# --- BibTeX author parsing helper
-def _parse_bibtex_authors(authors_field: str) -> list[str]:
-    """
-    Convert a BibTeX author string like
-    'Doe, John and Smith, Jane' → ['John Doe', 'Jane Smith'].
-
-    Handles both 'First Last' and 'Last, First' formats and trims whitespace.
-    """
-    if not authors_field:
-        return []
-    authors = [a.strip() for a in authors_field.split(" and ") if a.strip()]
-    parsed = []
-    for a in authors:
-        if "," in a:
-            last, first = [s.strip() for s in a.split(",", 1)]
-            parsed.append(f"{first} {last}")
-        else:
-            parsed.append(a)
-    return parsed
-
-
 async def lazy_process_add_paper_submission(
     body: dict, client: AsyncWebClient, logger, db, paper_service, user_service
 ):
@@ -63,16 +42,19 @@ async def lazy_process_add_paper_submission(
         if bibtex_str:
             try:
                 # Use bibtexparser to parse the bibtex string
-                bib_database = bibtexparser.loads(bibtex_str)
+                parser = bibtexparser.bparser.BibTexParser(common_strings=True)
+                parser.customization = bibtexparser.customization.convert_to_unicode
+                parser.customization = bibtexparser.customization.author
+                bib_database = bibtexparser.loads(bibtex_str, parser=parser)
+                bib_database = bibtexparser.loads(bibtex_str, parser=parser)
                 if bib_database.entries:
                     # Assuming only one entry for simplicity, take the first one
                     entry = bib_database.entries[0]
                     parsed_bibtex_data["title"] = entry.get("title")
                     # Prefer explicit URL; if absent we'll build one later from the arXiv ID.
                     parsed_bibtex_data["url"] = entry.get("url")
-                    parsed_bibtex_data["authors"] = _parse_bibtex_authors(
-                        entry.get("author", "")
-                    )
+                    # The customization handles author parsing into a list
+                    parsed_bibtex_data["authors"] = entry.get("author", [])
                     # Attempt to parse year for published_date
                     if "year" in entry:
                         try:

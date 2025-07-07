@@ -116,7 +116,7 @@ async def test_add_paper_with_bibtex_only(
     created_paper_data = args[0]
     assert created_paper_data.title == "Test BibTeX Paper"
     assert str(created_paper_data.url) == "http://example.com/bibtex"
-    assert "John Doe" in created_paper_data.author_names
+    assert "Doe, John" in created_paper_data.author_names
     assert created_paper_data.published_date.year == 2023
     assert created_paper_data.arxiv_id == "2301.00001"
     assert created_paper_data.bibtex == bibtex_str
@@ -426,7 +426,7 @@ async def test_add_paper_with_bibtex_minimal_fields(
     created_paper_data = args[0]
     assert created_paper_data.title == "Minimal BibTeX"
     assert str(created_paper_data.url) == "http://minimal.com"
-    assert "First Author" in created_paper_data.author_names
+    assert "Author, First" in created_paper_data.author_names
     assert created_paper_data.published_date.year == 2023
     assert created_paper_data.arxiv_id is None
     assert created_paper_data.bibtex == bibtex_str
@@ -759,8 +759,8 @@ async def test_add_paper_with_full_bibtex(
     created_paper_data = args[0]
     assert created_paper_data.title == "A Fictional Study on AI-Powered Code Generation"
     assert str(created_paper_data.url) == "https://doi.org/10.9999/fake.paper"
-    assert "John Smith" in created_paper_data.author_names
-    assert "Jane Doe" in created_paper_data.author_names
+    assert "Smith, John" in created_paper_data.author_names
+    assert "Doe, Jane" in created_paper_data.author_names
     assert created_paper_data.published_date.year == 2024
     assert created_paper_data.published_date.month == 10
     assert "AI" in created_paper_data.keyword_names
