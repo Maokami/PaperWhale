@@ -37,8 +37,15 @@ jobs:
       run: mypy .
       continue-on-error: true
 
-    - name: Test
-      run: python -m pytest
+    - name: Test with coverage
+      run: python -m pytest --cov=app --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        fail_ci_if_error: true
 
   build_and_push:
     needs: test_and_lint
