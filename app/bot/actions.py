@@ -310,13 +310,12 @@ def register_actions(app: AsyncApp):
             )
 
     @app.view("add_paper_modal")
-    async def handle_add_paper_modal_submission(ack, body, client, logger, lazy):
+    async def handle_add_paper_modal_submission(ack, body, client, logger):
         db = next(get_db())
         paper_service = PaperService(db)
         user_service = UserService(db)
         await ack()
-        lazy(
-            lazy_process_add_paper_submission,
+        await lazy_process_add_paper_submission(
             body=body,
             client=client,
             logger=logger,
