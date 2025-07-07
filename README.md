@@ -69,7 +69,7 @@ SLACK_BOT_TOKEN=xoxb-YOUR_BOT_TOKEN
 SLACK_SIGNING_SECRET=YOUR_SIGNING_SECRET
 SLACK_APP_TOKEN=xapp-YOUR_APP_TOKEN # Only needed for Socket Mode
 DATABASE_URL=sqlite:///./sql_app.db # Or your PostgreSQL connection string
-OPENAI_API_KEY=sk-YOUR_OPENAI_API_KEY # Optional, for AI summarization
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY # Optional, for AI summarization
 ```
 
 ### Local Setup
