@@ -23,3 +23,5 @@ spec:
             name: db-secret
         - secretRef:
             name: slack-secrets
+        - secretRef:
+            name: gemini-api-key

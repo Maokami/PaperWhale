@@ -99,6 +99,12 @@ jobs:
           DATABASE_URL: "${{ secrets.DATABASE_URL }}"
         EOF
 
+    - name: Create Gemini API Key Secret
+      run: |
+        kubectl create secret generic gemini-api-key \
+          --from-literal=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+
     - name: Deploy to Kubernetes
       run: |
         kubectl apply -f db-secret.yaml

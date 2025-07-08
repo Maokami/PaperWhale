@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SLACK_SIGNING_SECRET: str
     SLACK_APP_TOKEN: str
     DATABASE_URL: str = "sqlite:///./sql_app.db"
+    GEMINI_API_KEY: str | None = None
 
 
 settings = Settings()
