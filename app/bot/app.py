@@ -2,6 +2,7 @@ from slack_bolt.async_app import AsyncApp
 from app.core.config import settings
 from app.bot.commands import register_commands
 from app.bot.actions import register_actions
+from app.services.ai_service import AIService  # AIService 임포트
 
 # Initialize Slack Bolt app
 slack_app = AsyncApp(
@@ -10,7 +11,11 @@ slack_app = AsyncApp(
     request_verification_enabled=False,
 )
 
-register_commands(slack_app)
+# AIService 인스턴스 생성
+ai_service = AIService(api_key=settings.GEMINI_API_KEY)
+
+# register_commands에 ai_service 전달
+register_commands(slack_app, ai_service)
 register_actions(slack_app)
 
 

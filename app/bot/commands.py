@@ -1,7 +1,8 @@
 from slack_bolt.async_app import AsyncApp
+from app.services.ai_service import AIService  # AIService 임포트
 
 
-def register_commands(app: AsyncApp):
+def register_commands(app: AsyncApp, ai_service: AIService):
     @app.command("/논문-요약")
     async def summarize_paper_command(ack, body, client):
         await ack()
@@ -231,3 +232,18 @@ def register_commands(app: AsyncApp):
                 ],
             },
         )
+
+    @app.command("/요약")
+    async def summarize_text_command(ack, say, command):
+        await ack()
+        text_to_summarize = command["text"]
+        if not text_to_summarize:
+            await say("요약할 텍스트를 입력해주세요. 예: `/요약 긴 텍스트...`")
+            return
+
+        try:
+            # AIService를 사용하여 텍스트 요약
+            summary = await ai_service.summarize_text(text_to_summarize)
+            await say(f"요약 결과:\n{summary}")
+        except Exception as e:
+            await say(f"텍스트 요약 중 오류가 발생했습니다: {e}")
