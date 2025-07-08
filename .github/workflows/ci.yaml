@@ -72,7 +72,9 @@ jobs:
       with:
         context: .
         push: true
-        tags: ghcr.io/maokami/paperwhale:latest
+        tags: |
+          ghcr.io/maokami/paperwhale:latest
+          ghcr.io/maokami/paperwhale:${{ github.sha }}
 
   deploy:
     needs: build_and_push
@@ -107,6 +109,8 @@ jobs:
 
     - name: Deploy to Kubernetes
       run: |
+        # Replace the image tag in deployment.yaml with the current commit SHA
+        sed -i '' "s|ghcr.io/maokami/paperwhale:latest|ghcr.io/maokami/paperwhale:${{ github.sha }}|g" deployment.yaml
         kubectl apply -f db-secret.yaml
         kubectl apply -f service.yaml
         kubectl apply -f deployment.yaml
