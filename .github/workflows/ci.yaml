@@ -117,3 +117,5 @@ jobs:
         kubectl apply -f db-secret.yaml
         kubectl apply -f service.yaml
         kubectl apply -f deployment.yaml
+        kubectl apply -f grafana-ingress.yaml
+        kubectl apply -f prometheus-ingress.yaml
