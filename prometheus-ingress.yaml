@@ -3,12 +3,11 @@ kind: Ingress
 metadata:
   name: prometheus-ingress
   namespace: monitoring
-  spec:
-    ingressClassName: traefik
-    # Optional: Enable TLS (requires cert-manager or manual certs)
-    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    # traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
+  ingressClassName: traefik
+  # Optional: Enable TLS (requires cert-manager or manual certs)
+  # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  # traefik.ingress.kubernetes.io/router.tls: "true"
   rules:
   - host: prometheus.maokami.iptime.org
     http:
