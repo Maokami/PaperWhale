@@ -107,10 +107,13 @@ jobs:
           --from-literal=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
-    - name: Deploy to Kubernetes
+    - name: Update Deployment Image Tag
       run: |
-        # Replace the image tag in deployment.yaml with the current commit SHA
-        sed -i '' "s|ghcr.io/maokami/paperwhale:latest|ghcr.io/maokami/paperwhale:${{ github.sha }}|g" deployment.yaml
+        if [[ "$(uname)" == "Darwin" ]]; then
+          sed -i '' -e "s|ghcr.io/maokami/paperwhale:latest|ghcr.io/maokami/paperwhale:${{ github.sha }}|g" deployment.yaml
+        else
+          sed -i -e "s|ghcr.io/maokami/paperwhale:latest|ghcr.io/maokami/paperwhale:${{ github.sha }}|g" deployment.yaml
+        fi
         kubectl apply -f db-secret.yaml
         kubectl apply -f service.yaml
         kubectl apply -f deployment.yaml
