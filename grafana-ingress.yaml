@@ -9,10 +9,10 @@ spec:
   # traefik.ingress.kubernetes.io/router.entrypoints: websecure
   # traefik.ingress.kubernetes.io/router.tls: "true"
   rules:
-  - host: grafana.maokami.iptime.org
+  - host: maokami.iptime.org
     http:
       paths:
-      - path: /
+      - path: /grafana
         pathType: Prefix
         backend:
           service:
